@@ -1,6 +1,7 @@
 // lib/providers/auth_provider.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import 'package:echo_see_companion/core/utils/navigation_service.dart';
 import 'package:echo_see_companion/data/models/user_model.dart';
 import 'package:echo_see_companion/data/repositories/user_repository.dart';
 import 'package:echo_see_companion/data/repositories/supabase_user_repository.dart';
