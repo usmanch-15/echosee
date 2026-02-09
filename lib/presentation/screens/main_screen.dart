@@ -1,10 +1,15 @@
-// lib/presentation/screens/main_screen.dart
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:provider/provider.dart';
 import 'package:echo_see_companion/core/constants/app_colors.dart';
 import 'package:echo_see_companion/presentation/screens/settings_screen.dart';
 import 'package:echo_see_companion/presentation/screens/history_screen.dart';
-import 'package:echo_see_companion/presentation/screens/accounts_screen.dart';
+import 'package:echo_see_companion/presentation/screens/profile_screen.dart';
 import 'package:echo_see_companion/presentation/screens/features_screen.dart';
+import 'package:echo_see_companion/providers/transcript_provider.dart';
+import 'package:echo_see_companion/providers/app_theme_provider.dart';
+import 'package:echo_see_companion/providers/auth_provider.dart';
+import 'package:echo_see_companion/data/models/transcript_model.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -12,16 +17,29 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  List<Map<String, dynamic>> recentTranscripts = [
-    {'id': '1', 'text': 'Team meeting about Q4 goals', 'time': '10:30 AM', 'date': 'Today', 'fullText': 'Team meeting about Q4 goals and objectives. We discussed the upcoming projects and deadlines.'},
-    {'id': '2', 'text': 'Doctor appointment notes', 'time': 'Yesterday', 'date': '2:15 PM', 'fullText': 'Doctor appointment notes: Blood pressure normal, need to follow up in 3 months.'},
-    {'id': '3', 'text': 'Grocery shopping list', 'time': 'Dec 10', 'date': '11:00 AM', 'fullText': 'Grocery shopping list: Milk, eggs, bread, vegetables, fruits, and snacks.'},
-    {'id': '4', 'text': 'Project brainstorming session', 'time': 'Dec 8', 'date': '3:45 PM', 'fullText': 'Project brainstorming session for the new mobile application features and UI design.'},
-  ];
-
   bool isRecording = false;
   String selectedLanguage = 'ENG';
   bool autoRecord = true;
+  DateTime? _recordingStartTime;
+  String _liveText = '';
+  Timer? _liveTimer;
+  StreamSubscription<String>? _liveSub;
+
+  @override
+  void dispose() {
+    _liveSub?.cancel();
+    _liveTimer?.cancel();
+    super.dispose();
+  }
+  
+  @override
+  void initState() {
+    super.initState();
+    // Load transcripts when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<TranscriptProvider>(context, listen: false).loadTranscripts();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,10 +51,6 @@ class _MainScreenState extends State<MainScreen> {
         ),
         title: Text(
           'Echo See',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
         ),
         centerTitle: true,
       ),
@@ -61,12 +75,15 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildMainBox() {
+    final themeProvider = Provider.of<AppThemeProvider>(context);
+    final isDark = themeProvider.isDarkTheme;
+
     return Container(
       width: double.infinity,
       margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.grey[850] : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -76,36 +93,57 @@ class _MainScreenState extends State<MainScreen> {
             offset: Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey[300]!, width: 1),
+        border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[300]!, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // English Greeting
+          // English Greeting / Live Subtitles
           Text(
-            'Hello! How can I help you today?',
+            isRecording ? 'LIVE TRANSCRIPT:' : 'Hello! How can I help you today?',
             style: TextStyle(
-              fontSize: 22,
+              fontSize: themeProvider.fontSize + (isRecording ? 0 : 6),
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: isRecording ? AppColors.primary : (isDark ? Colors.white : Colors.black87),
             ),
           ),
 
-          SizedBox(height: 8),
+          if (isRecording) ...[
+            SizedBox(height: 12),
+            Container(
+              height: 100,
+              width: double.infinity,
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.black26 : Colors.grey[100],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: SingleChildScrollView(
+                reverse: true,
+                child: Text(
+                  _liveText,
+                  style: TextStyle(
+                    fontSize: themeProvider.fontSize + 2,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          if (!isRecording) SizedBox(height: 8),
 
           // Urdu Text (if language is Urdu)
-          if (selectedLanguage == 'اردو')
+          if (selectedLanguage == 'اردو' && !isRecording)
             Text(
-              'آپ کا کیا حال ہے؟ آپ کی کس طرح مدد کر سکتا ہوں؟',
+              'آپ کی مدد کیسے کر سکتا ہوں؟',
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[700],
+                fontSize: themeProvider.fontSize + 8,
+                color: isDark ? Colors.white70 : Colors.black54,
               ),
-              textAlign: TextAlign.right,
             ),
 
-          SizedBox(height: 24),
+          SizedBox(height: 25),
 
           // Language Toggle and Recording Status
           Row(
@@ -225,7 +263,7 @@ class _MainScreenState extends State<MainScreen> {
                             Text(
                               isRecording ? 'Recording...' : 'Listening...',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: themeProvider.fontSize - 2,
                                 fontWeight: FontWeight.w600,
                                 color: isRecording ? Colors.red : Colors.green,
                               ),
@@ -234,8 +272,8 @@ class _MainScreenState extends State<MainScreen> {
                             Text(
                               isRecording ? 'Tap to stop' : 'Tap to start',
                               style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey[600],
+                                fontSize: themeProvider.fontSize - 5,
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
                               ),
                             ),
                           ],
@@ -253,9 +291,11 @@ class _MainScreenState extends State<MainScreen> {
           // Record/Stop Button
           GestureDetector(
             onTap: () {
-              setState(() {
-                isRecording = !isRecording;
-              });
+              if (isRecording) {
+                _stopRecording();
+              } else {
+                _startRecording();
+              }
             },
             child: Container(
               width: double.infinity,
@@ -284,7 +324,7 @@ class _MainScreenState extends State<MainScreen> {
                   Text(
                     isRecording ? 'STOP RECORDING' : 'START RECORDING',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: themeProvider.fontSize + 2,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -334,6 +374,9 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildRecentTranscripts() {
+    final transcriptProvider = Provider.of<TranscriptProvider>(context);
+    final recentTranscripts = transcriptProvider.transcripts.take(4).toList();
+
     return Container(
       margin: EdgeInsets.all(16),
       child: Column(
@@ -350,324 +393,245 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
               TextButton(
-                onPressed: _viewAllTranscripts,
-                child: Text(
-                  'View All',
-                  style: TextStyle(color: AppColors.primary),
-                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => HistoryScreen()),
+                  );
+                },
+                child: Text('View All'),
               ),
             ],
           ),
           SizedBox(height: 12),
-          ...recentTranscripts.map((transcript) {
-            return GestureDetector(
-              onTap: () => _viewTranscript(transcript),
-              child: Card(
-                margin: EdgeInsets.only(bottom: 10),
-                elevation: 2,
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    child: Icon(Icons.description, color: AppColors.primary),
-                  ),
-                  title: Text(
-                    transcript['text'],
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text('${transcript['time']} • ${transcript['date']}'),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () => _deleteTranscript(transcript['id']),
-                  ),
+          if (transcriptProvider.isLoading && recentTranscripts.isEmpty)
+            Center(child: CircularProgressIndicator())
+          else if (recentTranscripts.isEmpty)
+            Center(
+              child: Container(
+                padding: EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.mic_none_outlined, 
+                      size: 64, 
+                      color: AppColors.primary.withOpacity(0.2)
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'No transcripts yet', 
+                      style: TextStyle(
+                        color: Colors.grey[800],
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold
+                      )
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Tap the record button to start your first live transcription session.', 
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600])
+                    ),
+                  ],
                 ),
               ),
-            );
-          }).toList(),
+            )
+          else
+            ...recentTranscripts.map((t) => _buildTranscriptCard(t)).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: BottomAppBar(
-        height: 70,
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            // Home Icon
-            _buildBottomNavItem(
-              icon: Icons.home,
-              label: 'Home',
-              isSelected: true,
-              onTap: () {},
-            ),
-            // Settings Icon
-            _buildBottomNavItem(
-              icon: Icons.settings,
-              label: 'Settings',
-              isSelected: false,
-              onTap: _navigateToSettings,
-            ),
-            // Transcript Icon
-            _buildBottomNavItem(
-              icon: Icons.description,
-              label: 'Transcript',
-              isSelected: false,
-              onTap: _viewAllTranscripts,
-            ),
-          ],
+  Widget _buildTranscriptCard(Transcript transcript) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: AppColors.primary.withOpacity(0.1),
+          child: Icon(Icons.description, color: AppColors.primary),
         ),
+        title: Text(
+          transcript.title.isNotEmpty ? transcript.title : transcript.content,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: Text('${transcript.formattedDate} • ${transcript.formattedDuration}'),
+        trailing: Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HistoryScreen(selectedTranscriptId: transcript.id),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildBottomNavItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 28,
-            color: isSelected ? AppColors.primary : Colors.grey[600],
-          ),
-          SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: isSelected ? AppColors.primary : Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
+  void _startRecording() {
+    setState(() {
+      isRecording = true;
+      _recordingStartTime = DateTime.now();
+      _liveText = '';
+    });
+    
+    // Mocking Live Subtitles animation (Day 3 feature)
+    List<String> mockWords = [
+      'Welcome', 'to', 'Echo', 'See.', 'Transcribing', 'your', 'voice', 'now...',
+      'This', 'is', 'a', 'live', 'realtime', 'subtitle', 'demo.', 'Pretty', 'cool', 'right?'
+    ];
+    int wordIndex = 0;
+    
+    // Timer to simulate live streaming data
+    _liveTimer = Timer.periodic(Duration(milliseconds: 600), (timer) {
+      if (!isRecording) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _liveText += mockWords[wordIndex % mockWords.length] + ' ';
+        wordIndex++;
+      });
+    });
+  }
+
+  void _stopRecording() async {
+    final duration = DateTime.now().difference(_recordingStartTime ?? DateTime.now());
+    setState(() {
+      isRecording = false;
+      _liveTimer?.cancel();
+    });
+
+    // Mock transcript content creation
+    final newTranscript = Transcript(
+      id: 'new', // Supabase will generate UUID
+      title: 'Recording ${DateTime.now().hour}:${DateTime.now().minute}',
+      content: _liveText.trim(),
+      date: DateTime.now(),
+      duration: duration,
+      language: selectedLanguage,
+      speakerSegments: [
+        SpeakerSegment(
+          speakerId: 1,
+          text: _liveText.trim(),
+          startTime: Duration.zero,
+          endTime: duration,
+        ),
+      ],
     );
+
+    try {
+      final provider = Provider.of<TranscriptProvider>(context, listen: false);
+      await provider.saveTranscript(newTranscript);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Transcript saved!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      final provider = Provider.of<TranscriptProvider>(context, listen: false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save transcript: ${provider.error ?? 'Unknown error'}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _showMenuDrawer() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // यह line important है
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.5, // 50% screen height
-          minChildSize: 0.4, // minimum 40%
-          maxChildSize: 0.8, // maximum 80%
-          expand: false,
-          builder: (context, scrollController) {
-            return Container(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Column(
-                children: [
-                  // Drag Handle
-                  Container(
-                    width: 60,
-                    height: 4,
-                    margin: EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-
-                  // Menu Title
-                  Text(
-                    'Menu',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 20),
-
-                  // Menu Items with Scroll
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      child: Column(
-                        children: [
-                          _buildMenuOption(
-                            icon: Icons.account_circle,
-                            title: 'Accounts',
-                            onTap: () {
-                              Navigator.pop(context);
-                              _navigateToAccounts();
-                            },
-                          ),
-                          _buildMenuOption(
-                            icon: Icons.history,
-                            title: 'History',
-                            onTap: () {
-                              Navigator.pop(context);
-                              _viewAllTranscripts();
-                            },
-                          ),
-                          _buildMenuOption(
-                            icon: Icons.featured_play_list,
-                            title: 'Features',
-                            onTap: () {
-                              Navigator.pop(context);
-                              _navigateToFeatures();
-                            },
-                          ),
-                          _buildMenuOption(
-                            icon: Icons.settings,
-                            title: 'Settings',
-                            onTap: () {
-                              Navigator.pop(context);
-                              _navigateToSettings();
-                            },
-                          ),
-                          SizedBox(height: 20),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Close Button
-                  Container(
-                    width: double.infinity,
-                    margin: EdgeInsets.only(bottom: 20, top: 10),
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: Size(double.infinity, 50),
-                        backgroundColor: Colors.grey[100],
-                        foregroundColor: Colors.grey[800],
-                      ),
-                      child: Text('Close'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (context) => Container(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildDrawerItem(Icons.history, 'History', () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => HistoryScreen()));
+            }),
+            _buildDrawerItem(Icons.star, 'Features', () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => FeaturesScreen()));
+            }),
+            _buildDrawerItem(Icons.settings, 'Settings', () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsScreen()));
+            }),
+            _buildDrawerItem(Icons.person, 'Account', () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen()));
+            }),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildMenuOption({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(icon, size: 28, color: AppColors.primary),
-      title: Text(
-        title,
-        style: TextStyle(fontSize: 18),
-      ),
-      trailing: Icon(Icons.chevron_right, color: Colors.grey),
+      leading: Icon(icon, color: AppColors.primary),
+      title: Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
       onTap: onTap,
     );
   }
 
-  void _navigateToAccounts() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => AccountsScreen()),
-    );
-  }
-
-  void _navigateToFeatures() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => FeaturesScreen()),
-    );
-  }
-
-  void _navigateToSettings() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => SettingsScreen()),
-    );
-  }
-
-  void _viewAllTranscripts() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => HistoryScreen(transcripts: recentTranscripts)),
-    ).then((value) {
-      if (value != null && value is List) {
-        setState(() {
-          recentTranscripts = List<Map<String, dynamic>>.from(value);
-        });
-      }
-    });
-  }
-
-  void _viewTranscript(Map<String, dynamic> transcript) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HistoryScreen(
-          transcripts: recentTranscripts,
-          selectedTranscriptId: transcript['id'],
-        ),
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 10),
+        ],
       ),
-    ).then((value) {
-      if (value != null && value is List) {
-        setState(() {
-          recentTranscripts = List<Map<String, dynamic>>.from(value);
-        });
-      }
-    });
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(Icons.home, 'Home', true, () {}),
+          _buildNavItem(Icons.history, 'History', false, () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => HistoryScreen()));
+          }),
+          _buildNavItem(Icons.person, 'Profile', false, () {
+             Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen()));
+          }),
+        ],
+      ),
+    );
   }
 
-  void _deleteTranscript(String id) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Delete Transcript'),
-          content: Text('Are you sure you want to delete this transcript?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
+  Widget _buildNavItem(IconData icon, String label, bool isActive, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: isActive ? AppColors.primary : Colors.grey),
+          Text(
+            label,
+            style: TextStyle(
+              color: isActive ? AppColors.primary : Colors.grey,
+              fontSize: 12,
             ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  recentTranscripts.removeWhere((item) => item['id'] == id);
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Transcript deleted'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: Text('Delete'),
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }

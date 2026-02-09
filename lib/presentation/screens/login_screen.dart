@@ -2,9 +2,11 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:echo_see_companion/core/constants/app_colors.dart';
 import 'package:echo_see_companion/presentation/screens/signup_screen.dart';
 import 'package:echo_see_companion/presentation/screens/main_screen.dart';
+import 'package:echo_see_companion/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -176,32 +178,36 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       SizedBox(
                         width: double.infinity,
                         height: 50,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 3,
-                          ),
-                          child: _isLoading
-                              ? SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 3,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                              : Text(
-                            'LOGIN',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        child: Consumer<AuthProvider>(
+                          builder: (context, auth, _) {
+                            return ElevatedButton(
+                              onPressed: auth.isLoading ? null : _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 3,
+                              ),
+                              child: auth.isLoading
+                                  ? SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                                  : Text(
+                                'LOGIN',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
 
@@ -242,11 +248,25 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           _buildSocialButton(
                             icon: Icons.g_translate,
                             label: 'Google',
+                            onPressed: () async {
+                              final auth = Provider.of<AuthProvider>(context, listen: false);
+                              await auth.signInWithGoogle();
+                              if (auth.currentUser != null && mounted) {
+                                Navigator.pushReplacementNamed(context, '/home');
+                              }
+                            },
                           ),
                           SizedBox(width: 20),
                           _buildSocialButton(
                             icon: Icons.facebook,
                             label: 'Facebook',
+                            onPressed: () async {
+                              final auth = Provider.of<AuthProvider>(context, listen: false);
+                              await auth.signInWithFacebook();
+                              if (auth.currentUser != null && mounted) {
+                                Navigator.pushReplacementNamed(context, '/home');
+                              }
+                            },
                           ),
                         ],
                       ),
@@ -391,16 +411,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Widget _buildSocialButton({
     required IconData icon,
     required String label,
+    required VoidCallback onPressed,
   }) {
     return OutlinedButton.icon(
-      onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$label login would be implemented'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-      },
+      onPressed: onPressed,
       icon: Icon(icon, size: 18),
       label: Text(label),
       style: OutlinedButton.styleFrom(
@@ -425,76 +439,122 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       return;
     }
 
-    setState(() => _isLoading = true);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    final success = await authProvider.login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
 
-    // Test credentials - usman@gmail.com / 123456
-    if (_emailController.text == 'usman@gmail.com' &&
-        _passwordController.text == '123456') {
-      await Future.delayed(Duration(seconds: 1));
-
+    if (success && mounted) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => MainScreen()),
       );
-    } else {
-      await Future.delayed(Duration(seconds: 1));
-
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Invalid email or password. Use: usman@gmail.com / 123456'),
+          content: Text(authProvider.error ?? 'Login failed'),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
         ),
       );
-
-      setState(() => _isLoading = false);
     }
   }
 
   void _showForgotPasswordDialog() {
+    final TextEditingController resetEmailController = TextEditingController(text: _emailController.text);
+    bool isResetting = false;
+
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(
-            'Reset Password',
-            style: TextStyle(color: AppColors.primary),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Enter your email to reset password:'),
-              SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(
+                'Reset Password',
+                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Password reset email sent!'),
-                    backgroundColor: AppColors.primary,
-                    behavior: SnackBarBehavior.floating,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'We will send a password reset link to your email address.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                  SizedBox(height: 20),
+                  TextField(
+                    key: Key('resetEmailField'),
+                    controller: resetEmailController,
+                    decoration: InputDecoration(
+                      labelText: 'Email Address',
+                      hintText: 'email@example.com',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                ],
               ),
-              child: Text('Send Link'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: isResetting ? null : () => Navigator.pop(context),
+                  child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: isResetting ? null : () async {
+                    if (resetEmailController.text.isEmpty) {
+                      return;
+                    }
+                    
+                    setDialogState(() => isResetting = true);
+                    
+                    try {
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      await authProvider.resetPassword(resetEmailController.text.trim());
+                      
+                      if (mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.white),
+                                SizedBox(width: 12),
+                                Text('Reset link sent! Check your inbox.'),
+                              ],
+                            ),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        setDialogState(() => isResetting = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: isResetting 
+                    ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : Text('Send Link'),
+                ),
+              ],
+            );
+          }
         );
       },
     );

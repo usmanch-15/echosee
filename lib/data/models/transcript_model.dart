@@ -9,6 +9,8 @@ class Transcript {
   final bool hasTranslation;
   final List<SpeakerSegment> speakerSegments;
   final bool isStarred;
+  final String? translatedContent;
+  final String? translatedLanguage;
 
   Transcript({
     required this.id,
@@ -20,6 +22,8 @@ class Transcript {
     this.hasTranslation = false,
     required this.speakerSegments,
     this.isStarred = false,
+    this.translatedContent,
+    this.translatedLanguage,
   });
 
   factory Transcript.fromJson(Map<String, dynamic> json) {
@@ -28,14 +32,49 @@ class Transcript {
       title: json['title'],
       content: json['content'],
       date: DateTime.parse(json['date']),
-      duration: Duration(seconds: json['duration']),
+      duration: Duration(seconds: json['duration'] ?? 0),
       language: json['language'],
-      hasTranslation: json['hasTranslation'],
-      speakerSegments: (json['speakerSegments'] as List)
+      hasTranslation: json['hasTranslation'] ?? false,
+      speakerSegments: (json['speakerSegments'] as List? ?? [])
           .map((segment) => SpeakerSegment.fromJson(segment))
           .toList(),
-      isStarred: json['isStarred'],
+      isStarred: json['isStarred'] ?? false,
+      translatedContent: json['translatedContent'],
+      translatedLanguage: json['translatedLanguage'],
     );
+  }
+
+  factory Transcript.fromSupabase(Map<String, dynamic> json) {
+    return Transcript(
+      id: json['id'],
+      title: json['title'],
+      content: json['content'],
+      date: DateTime.parse(json['date']),
+      duration: Duration(seconds: json['duration'] ?? 0),
+      language: json['language'],
+      hasTranslation: json['has_translation'] ?? false,
+      speakerSegments: (json['speaker_segments'] as List? ?? [])
+          .map((segment) => SpeakerSegment.fromJson(segment))
+          .toList(),
+      isStarred: json['is_starred'] ?? false,
+      translatedContent: json['translated_content'],
+      translatedLanguage: json['translated_language'],
+    );
+  }
+
+  Map<String, dynamic> toSupabase() {
+    return {
+      'title': title,
+      'content': content,
+      'date': date.toIso8601String(),
+      'duration': duration.inSeconds,
+      'language': language,
+      'has_translation': hasTranslation,
+      'speaker_segments': speakerSegments.map((s) => s.toJson()).toList(),
+      'is_starred': isStarred,
+      'translated_content': translatedContent,
+      'translated_language': translatedLanguage,
+    };
   }
 
   Map<String, dynamic> toJson() {
@@ -49,6 +88,8 @@ class Transcript {
       'hasTranslation': hasTranslation,
       'speakerSegments': speakerSegments.map((s) => s.toJson()).toList(),
       'isStarred': isStarred,
+      'translatedContent': translatedContent,
+      'translatedLanguage': translatedLanguage,
     };
   }
 
@@ -63,6 +104,8 @@ class Transcript {
     bool? hasTranslation,
     List<SpeakerSegment>? speakerSegments,
     bool? isStarred,
+    String? translatedContent,
+    String? translatedLanguage,
   }) {
     return Transcript(
       id: id ?? this.id,
@@ -74,6 +117,8 @@ class Transcript {
       hasTranslation: hasTranslation ?? this.hasTranslation,
       speakerSegments: speakerSegments ?? this.speakerSegments,
       isStarred: isStarred ?? this.isStarred,
+      translatedContent: translatedContent ?? this.translatedContent,
+      translatedLanguage: translatedLanguage ?? this.translatedLanguage,
     );
   }
 
@@ -104,12 +149,14 @@ class Transcript {
 
 class SpeakerSegment {
   final int speakerId;
+  final String? speakerName;
   final String text;
   final Duration startTime;
   final Duration endTime;
 
   SpeakerSegment({
     required this.speakerId,
+    this.speakerName,
     required this.text,
     required this.startTime,
     required this.endTime,
@@ -118,15 +165,37 @@ class SpeakerSegment {
   factory SpeakerSegment.fromJson(Map<String, dynamic> json) {
     return SpeakerSegment(
       speakerId: json['speakerId'],
+      speakerName: json['speakerName'],
       text: json['text'],
       startTime: Duration(seconds: json['startTime']),
       endTime: Duration(seconds: json['endTime']),
     );
   }
 
+  factory SpeakerSegment.fromSupabase(Map<String, dynamic> json) {
+    return SpeakerSegment(
+      speakerId: json['speaker_id'],
+      speakerName: json['speaker_name'],
+      text: json['text'],
+      startTime: Duration(seconds: json['start_time']),
+      endTime: Duration(seconds: json['end_time']),
+    );
+  }
+
+  Map<String, dynamic> toSupabase() {
+    return {
+      'speaker_id': speakerId,
+      'speaker_name': speakerName,
+      'text': text,
+      'start_time': startTime.inSeconds,
+      'end_time': endTime.inSeconds,
+    };
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'speakerId': speakerId,
+      'speakerName': speakerName,
       'text': text,
       'startTime': startTime.inSeconds,
       'endTime': endTime.inSeconds,
@@ -136,12 +205,14 @@ class SpeakerSegment {
   // ADD copyWith for SpeakerSegment too
   SpeakerSegment copyWith({
     int? speakerId,
+    String? speakerName,
     String? text,
     Duration? startTime,
     Duration? endTime,
   }) {
     return SpeakerSegment(
       speakerId: speakerId ?? this.speakerId,
+      speakerName: speakerName ?? this.speakerName,
       text: text ?? this.text,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,

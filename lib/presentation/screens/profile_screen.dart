@@ -1,8 +1,11 @@
-// lib/presentation/screens/profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:echo_see_companion/core/constants/app_colors.dart';
 import 'package:echo_see_companion/core/constants/app_strings.dart';
 import 'package:echo_see_companion/data/models/user_model.dart';
+import 'package:echo_see_companion/providers/auth_provider.dart';
+import 'package:echo_see_companion/providers/transcript_provider.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -10,18 +13,38 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late User _user;
-  bool _isLoading = false;
+  User? get _user => Provider.of<AuthProvider>(context).currentUser;
+  
+  int get _transcriptsCount => Provider.of<TranscriptProvider>(context).transcripts.length;
+  
+  int get _totalRecordingTime {
+    final transcripts = Provider.of<TranscriptProvider>(context).transcripts;
+    if (transcripts.isEmpty) return 0;
+    return transcripts.fold(0, (sum, t) => sum + t.duration.inSeconds);
+  }
 
-  // Add computed properties to handle the missing fields
-  int get _transcriptsCount => 42;
-  int get _totalRecordingTime => 86400; // 24 hours
-  bool get _hasPremium => _user.isPremium;
-  List<String> get _recentLanguages => ['English', 'Urdu'];
+  bool get _hasPremium => _user?.isPremium ?? false;
+  
+  List<String> get _recentLanguages {
+    final transcripts = Provider.of<TranscriptProvider>(context).transcripts;
+    if (transcripts.isEmpty) return ['English'];
+    final langs = transcripts.map((t) => t.language).toSet().toList();
+    return langs.take(3).toList();
+  }
+
   String get _formattedTotalRecordingTime {
-    final hours = _totalRecordingTime ~/ 3600;
-    final minutes = (_totalRecordingTime % 3600) ~/ 60;
-    return '$hours hours $minutes minutes';
+    final totalSeconds = _totalRecordingTime;
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    
+    if (hours > 0) {
+      return '$hours hours $minutes minutes';
+    } else if (minutes > 0) {
+      return '$minutes minutes $seconds seconds';
+    } else {
+      return '$seconds seconds';
+    }
   }
 
   @override
@@ -31,28 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadUserData() async {
-    setState(() => _isLoading = true);
-    await Future.delayed(Duration(milliseconds: 500));
-
-    // Mock user data - adjust according to your actual User model
-    // _user = User(
-    //   id: 'user_123',
-    //   name: 'Usman Saeed',
-    //   email: 'usman@gmail.com',
-    //   profileImage: null,
-    //   createdAt: DateTime.now().subtract(Duration(days: 60)),
-    //   isPremium: true,
-    //   premiumExpiry: DateTime.now().add(Duration(days: 15)),
-    //   preferences: {
-    //     'theme': 'Dark',
-    //     'fontSize': 20.0,
-    //     'autoSave': true,
-    //     'showSpeakerTags': true,
-    //     'soundEffects': true,
-    //   },
-    // );
-
-    setState(() => _isLoading = false);
+    // Current user is already managed by AuthProvider
   }
 
   @override
@@ -68,7 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: _isLoading
+      body: _user == null
           ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
         child: Column(
@@ -109,13 +111,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           CircleAvatar(
             radius: 50,
             backgroundColor: Colors.white,
-            child: _user.profileImage != null
+            child: _user?.profileImage != null && _user!.profileImage!.isNotEmpty
                 ? CircleAvatar(
               radius: 48,
-              backgroundImage: NetworkImage(_user.profileImage!),
+              backgroundImage: NetworkImage(_user!.profileImage!),
             )
                 : Text(
-              _getInitials(_user.name),
+              _user?.initials ?? '?',
               style: TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
@@ -128,7 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           // User Info
           Text(
-            _user.name,
+            _user?.name ?? '',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -139,7 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SizedBox(height: 8),
 
           Text(
-            _user.email,
+            _user?.email ?? '',
             style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.9),
@@ -176,11 +178,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
 
-          if (_hasPremium && _user.premiumExpiry != null)
+          if (_hasPremium && _user?.premiumExpiry != null)
             Padding(
               padding: EdgeInsets.only(top: 12),
               child: Text(
-                'Expires in ${DateTime.now().difference(_user.premiumExpiry!).inDays.abs()} days',
+                'Expires in ${_user!.premiumExpiry!.difference(DateTime.now()).inDays.abs()} days',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.8),
                   fontSize: 12,
@@ -351,7 +353,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPreferencesSection() {
-    final prefs = _user.preferences ?? {};
+    final prefs = _user?.preferences ?? {};
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -485,6 +487,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
 
+          SizedBox(height: 12),
+
+          ElevatedButton.icon(
+            onPressed: _logout,
+            icon: Icon(Icons.logout),
+            label: Text('Logout'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: Size(double.infinity, 50),
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+          ),
+
           SizedBox(height: 20),
 
           // App Version
@@ -501,43 +516,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _editProfile() {
+    final nameController = TextEditingController(text: _user?.name);
+    final imageController = TextEditingController(text: _user?.profileImage);
+    final emailController = TextEditingController(text: _user?.email);
+    
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Text('Edit Profile'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: AppColors.primary,
-                child: Text(
-                  _getInitials(_user.name),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: AppColors.primary,
+                  child: Text(
+                    _user?.initials ?? '?',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(height: 20),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Full Name',
-                  border: OutlineInputBorder(),
+                SizedBox(height: 20),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
                 ),
-                controller: TextEditingController(text: _user.name),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
+                SizedBox(height: 12),
+                TextField(
+                  controller: imageController,
+                  decoration: InputDecoration(
+                    labelText: 'Profile Image URL',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.image_outlined),
+                  ),
                 ),
-                controller: TextEditingController(text: _user.email),
-              ),
-            ],
+                SizedBox(height: 12),
+                TextField(
+                  controller: emailController,
+                  enabled: false,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -545,11 +578,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Profile updated')),
+              onPressed: () async {
+                final auth = Provider.of<AuthProvider>(context, listen: false);
+                final success = await auth.updateProfile(
+                  name: nameController.text.trim(),
+                  imageUrl: imageController.text.trim(),
                 );
+                
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success ? 'Profile updated successfully' : 'Failed to update profile'),
+                      backgroundColor: success ? Colors.green : Colors.red,
+                    ),
+                  );
+                }
               },
               child: Text('Save'),
             ),
@@ -557,6 +601,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  void _logout() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.logout();
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   void _goPremium() {
@@ -575,8 +627,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Text('Current Plan: ${_hasPremium ? 'Premium' : 'Free'}'),
               SizedBox(height: 12),
-              if (_hasPremium && _user.premiumExpiry != null)
-                Text('Expires: ${_user.premiumExpiry!.toString().substring(0, 10)}'),
+              if (_hasPremium && _user?.premiumExpiry != null)
+                Text('Expires: ${_user!.premiumExpiry!.toString().substring(0, 10)}'),
               SizedBox(height: 12),
               Text('Transcripts: $_transcriptsCount'),
               Text('Recording Time: $_formattedTotalRecordingTime'),

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your EchoSee Account</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 0;
+            color: #333333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            background-color: #6200EE;
+            /* EchoSee Primary Color */
+            padding: 40px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: 1px;
+        }
+
+        .content {
+            padding: 40px;
+            line-height: 1.6;
+        }
+
+        .content h2 {
+            color: #6200EE;
+            margin-top: 0;
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .button {
+            background-color: #6200EE;
+            color: white !important;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(98, 0, 238, 0.2);
+        }
+
+        .footer {
+            background-color: #f9f9f9;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #777777;
+            border-top: 1px solid #eeeeee;
+        }
+
+        .support-link {
+            color: #6200EE;
+            text-decoration: none;
+        }
+
+        .disclaimer {
+            font-size: 12px;
+            color: #999999;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>EchoSee</h1>
+            <p>Smart Glasses Companion</p>
+        </div>
+        <div class="content">
+            <h2>Welcome to EchoSee!</h2>
+            <p>Hi there,</p>
+            <p>Thank you for signing up for EchoSee. We're excited to have you on board! To finish setting up your
+                account and start using our smart glasses features, please confirm your email address by clicking the
+                button below.</p>
+
+            <div class="button-container">
+                <a href="{{ .ConfirmationURL }}" class="button">Confirm Account</a>
+            </div>
+
+            <p>If you didn't create an account with EchoSee, you can safely ignore this email.</p>
+            <p>If the button above doesn't work, copy and paste the following link into your browser:</p>
+            <p style="word-break: break-all; font-size: 11px; color: #666666;">{{ .ConfirmationURL }}</p>
+
+            <p class="disclaimer">If you have any questions, please contact our support team at <a
+                    href="mailto:support@echosee.com" class="support-link">support@echosee.com</a>.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 EchoSee Inc. | All rights reserved.</p>
+            <p>Designed for Accessibility. Built for the Future.</p>
+        </div>
+    </div>
+</body>
+
+</html>

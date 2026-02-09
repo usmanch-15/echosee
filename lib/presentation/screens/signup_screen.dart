@@ -1,11 +1,12 @@
-// lib/presentation/screens/signup_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:echo_see_companion/core/constants/app_colors.dart';
 import 'package:echo_see_companion/core/constants/app_styles.dart';
 import 'package:echo_see_companion/presentation/widgets/common/custom_button.dart';
 import 'package:echo_see_companion/presentation/widgets/common/custom_textfield.dart';
 import 'main_screen.dart';
 import 'login_screen.dart';
+import 'package:echo_see_companion/providers/auth_provider.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -243,6 +244,53 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
 
                 SizedBox(height: AppSpacing.xl),
 
+                // Signup Button
+                Consumer<AuthProvider>(
+                  builder: (context, auth, _) {
+                    return CustomButton(
+                      text: 'CREATE ACCOUNT',
+                      isLoading: auth.isLoading,
+                      onPressed: _termsAccepted ? _signup : null,
+                    );
+                  },
+                ),
+
+                SizedBox(height: AppSpacing.xl),
+
+                // Divider
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey[300])),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 15),
+                      child: Text(
+                        'or sign up with',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey[300])),
+                  ],
+                ),
+
+                SizedBox(height: AppSpacing.lg),
+
+                // Social buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildSocialButton(
+                      icon: Icons.g_translate,
+                      label: 'Google',
+                      onPressed: () => context.read<AuthProvider>().signInWithGoogle(),
+                    ),
+                    SizedBox(width: 20),
+                    _buildSocialButton(
+                      icon: Icons.facebook,
+                      label: 'Facebook',
+                      onPressed: () => context.read<AuthProvider>().signInWithFacebook(),
+                    ),
+                  ],
+                ),
 
                 SizedBox(height: AppSpacing.xl),
 
@@ -280,14 +328,34 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
 
   void _signup() async {
     if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+      if (!_termsAccepted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please accept terms and conditions')),
+        );
+        return;
+      }
 
-      await Future.delayed(Duration(seconds: 2));
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MainScreen()),
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.signup(
+        _nameController.text.trim(),
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
       );
+
+      if (success && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainScreen()),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? 'Signup failed'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -335,6 +403,26 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
           ],
         );
       },
+    );
+  }
+
+  Widget _buildSocialButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.grey[700],
+        side: BorderSide(color: Colors.grey[300]!),
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
     );
   }
 
