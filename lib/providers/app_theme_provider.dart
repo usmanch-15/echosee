@@ -1,0 +1,199 @@
+// lib/core/providers/app_theme_provider.dart
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class AppThemeProvider extends ChangeNotifier {
+  static const String FONT_SIZE_KEY = 'font_size';
+  static const String DARK_THEME_KEY = 'dark_theme';
+  static const String SHOW_SPEAKER_KEY = 'show_speaker';
+  static const String SPEAKER_COUNT_KEY = 'speaker_count';
+
+  // Settings state with defaults
+  double _fontSize = 16.0;
+  bool _isDarkTheme = false;
+  bool _showSpeakerSettings = true;
+  int _numberOfSpeakers = 2;
+
+  AppThemeProvider() {
+    _loadPreferences();
+  }
+
+  // Getters
+  double get fontSize => _fontSize;
+  bool get isDarkTheme => _isDarkTheme;
+  bool get showSpeakerSettings => _showSpeakerSettings;
+  int get numberOfSpeakers => _numberOfSpeakers;
+
+  // Load preferences from storage
+  Future<void> _loadPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      _fontSize = prefs.getDouble(FONT_SIZE_KEY) ?? 16.0;
+      _isDarkTheme = prefs.getBool(DARK_THEME_KEY) ?? false;
+      _showSpeakerSettings = prefs.getBool(SHOW_SPEAKER_KEY) ?? true;
+      _numberOfSpeakers = prefs.getInt(SPEAKER_COUNT_KEY) ?? 2;
+
+      notifyListeners();
+    } catch (e) {
+      print('Error loading preferences: $e');
+    }
+  }
+
+  // Save preferences to storage
+  Future<void> _savePreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setDouble(FONT_SIZE_KEY, _fontSize);
+      await prefs.setBool(DARK_THEME_KEY, _isDarkTheme);
+      await prefs.setBool(SHOW_SPEAKER_KEY, _showSpeakerSettings);
+      await prefs.setInt(SPEAKER_COUNT_KEY, _numberOfSpeakers);
+    } catch (e) {
+      print('Error saving preferences: $e');
+    }
+  }
+
+  // Setters
+  void setFontSize(double size) {
+    _fontSize = size;
+    _savePreferences();
+    notifyListeners();
+  }
+
+  void setDarkTheme(bool value) {
+    _isDarkTheme = value;
+    _savePreferences();
+    notifyListeners();
+  }
+
+  void setShowSpeakerSettings(bool value) {
+    _showSpeakerSettings = value;
+    _savePreferences();
+    notifyListeners();
+  }
+
+  void setNumberOfSpeakers(int number) {
+    _numberOfSpeakers = number;
+    _savePreferences();
+    notifyListeners();
+  }
+
+  void resetToDefaults() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.remove(FONT_SIZE_KEY);
+      await prefs.remove(DARK_THEME_KEY);
+      await prefs.remove(SHOW_SPEAKER_KEY);
+      await prefs.remove(SPEAKER_COUNT_KEY);
+
+      _fontSize = 16.0;
+      _isDarkTheme = false;
+      _showSpeakerSettings = true;
+      _numberOfSpeakers = 2;
+
+      notifyListeners();
+    } catch (e) {
+      print('Error resetting preferences: $e');
+    }
+  }
+
+  // Theme data getters
+  ThemeData get themeData => isDarkTheme ? darkThemeData : lightThemeData;
+
+  ThemeData get lightThemeData => ThemeData(
+    brightness: Brightness.light,
+    primaryColor: Colors.blue,
+    primarySwatch: Colors.blue,
+    fontFamily: 'Roboto',
+    scaffoldBackgroundColor: Colors.grey[50],
+    appBarTheme: AppBarTheme(
+      color: Colors.blue,
+      elevation: 4,
+      titleTextStyle: TextStyle(
+        fontSize: _fontSize + 4,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    ),
+    textTheme: TextTheme(
+      displayLarge: TextStyle(fontSize: _fontSize + 12, fontWeight: FontWeight.bold),
+      displayMedium: TextStyle(fontSize: _fontSize + 10, fontWeight: FontWeight.bold),
+      displaySmall: TextStyle(fontSize: _fontSize + 8, fontWeight: FontWeight.bold),
+      headlineMedium: TextStyle(fontSize: _fontSize + 6, fontWeight: FontWeight.bold),
+      headlineSmall: TextStyle(fontSize: _fontSize + 4, fontWeight: FontWeight.bold),
+      titleLarge: TextStyle(fontSize: _fontSize + 2, fontWeight: FontWeight.bold),
+      titleMedium: TextStyle(fontSize: _fontSize + 1, fontWeight: FontWeight.w500),
+      titleSmall: TextStyle(fontSize: _fontSize, fontWeight: FontWeight.w500),
+      bodyLarge: TextStyle(fontSize: _fontSize),
+      bodyMedium: TextStyle(fontSize: _fontSize - 1),
+      bodySmall: TextStyle(fontSize: _fontSize - 2),
+      labelLarge: TextStyle(fontSize: _fontSize),
+      labelSmall: TextStyle(fontSize: _fontSize - 3),
+    ),
+
+    buttonTheme: ButtonThemeData(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      ),
+    ),
+  );
+
+  ThemeData get darkThemeData => ThemeData(
+    brightness: Brightness.dark,
+    primaryColor: Colors.blue,
+    primarySwatch: Colors.blue,
+    fontFamily: 'Roboto',
+    scaffoldBackgroundColor: Colors.grey[900],
+    appBarTheme: AppBarTheme(
+      color: Colors.grey[900],
+      elevation: 4,
+      titleTextStyle: TextStyle(
+        fontSize: _fontSize + 4,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    ),
+    textTheme: TextTheme(
+      displayLarge: TextStyle(fontSize: _fontSize + 12, fontWeight: FontWeight.bold),
+      displayMedium: TextStyle(fontSize: _fontSize + 10, fontWeight: FontWeight.bold),
+      displaySmall: TextStyle(fontSize: _fontSize + 8, fontWeight: FontWeight.bold),
+      headlineMedium: TextStyle(fontSize: _fontSize + 6, fontWeight: FontWeight.bold),
+      headlineSmall: TextStyle(fontSize: _fontSize + 4, fontWeight: FontWeight.bold),
+      titleLarge: TextStyle(fontSize: _fontSize + 2, fontWeight: FontWeight.bold),
+      titleMedium: TextStyle(fontSize: _fontSize + 1, fontWeight: FontWeight.w500),
+      titleSmall: TextStyle(fontSize: _fontSize, fontWeight: FontWeight.w500),
+      bodyLarge: TextStyle(fontSize: _fontSize),
+      bodyMedium: TextStyle(fontSize: _fontSize - 1),
+      bodySmall: TextStyle(fontSize: _fontSize - 2),
+      labelLarge: TextStyle(fontSize: _fontSize),
+      labelSmall: TextStyle(fontSize: _fontSize - 3),
+    ),
+
+    buttonTheme: ButtonThemeData(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        backgroundColor: Colors.blue,
+      ),
+    ),
+    dialogBackgroundColor: Colors.grey[800],
+    dividerColor: Colors.grey[700],
+  );
+}

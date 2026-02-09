@@ -1,6 +1,8 @@
 // lib/presentation/screens/settings_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:echo_see_companion/core/constants/app_colors.dart';
+import '../../providers/app_theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -8,12 +10,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Settings state
-  double _fontSize = 16.0; // Default font size
-  bool _isDarkTheme = false;
-  bool _showSpeakerSettings = true;
-  int _numberOfSpeakers = 2;
-
   // Font size options
   final List<Map<String, dynamic>> _fontSizeOptions = [
     {'label': 'Small', 'size': 14.0},
@@ -24,6 +20,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<AppThemeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -33,7 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(
           'Settings',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: themeProvider.fontSize + 4,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -46,20 +44,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             // Font Size Settings
             _buildSettingSection(
+              themeProvider: themeProvider,
               title: 'Font Size',
               icon: Icons.text_fields,
               child: Column(
                 children: [
                   Slider(
-                    value: _fontSize,
+                    value: themeProvider.fontSize,
                     min: 12.0,
                     max: 24.0,
                     divisions: 6,
-                    label: _getFontSizeLabel(_fontSize),
+                    label: _getFontSizeLabel(themeProvider.fontSize),
                     onChanged: (value) {
-                      setState(() {
-                        _fontSize = value;
-                      });
+                      themeProvider.setFontSize(value);
                     },
                   ),
                   SizedBox(height: 16),
@@ -69,11 +66,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       return _buildFontSizeOption(
                         label: option['label'],
                         size: option['size'],
-                        isSelected: _fontSize == option['size'],
+                        isSelected: themeProvider.fontSize == option['size'],
                         onTap: () {
-                          setState(() {
-                            _fontSize = option['size'];
-                          });
+                          themeProvider.setFontSize(option['size']);
                         },
                       );
                     }).toList(),
@@ -82,9 +77,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: themeProvider.isDarkTheme ? Colors.grey[800] : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(
+                        color: themeProvider.isDarkTheme ? Colors.grey[700]! : Colors.grey[300]!,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,17 +89,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Text(
                           'Preview',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: themeProvider.fontSize - 2,
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey[600],
+                            color: themeProvider.isDarkTheme ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
                         SizedBox(height: 8),
                         Text(
                           'Hello! This is how your text will appear.',
                           style: TextStyle(
-                            fontSize: _fontSize,
-                            color: _isDarkTheme ? Colors.white : Colors.black,
+                            fontSize: themeProvider.fontSize,
+                            color: themeProvider.isDarkTheme ? Colors.white : Colors.black,
                           ),
                         ),
                       ],
@@ -116,6 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             // Theme Settings
             _buildSettingSection(
+              themeProvider: themeProvider,
               title: 'Theme',
               icon: Icons.palette,
               child: Column(
@@ -123,30 +121,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SwitchListTile(
                     title: Text(
                       'Dark Mode',
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: themeProvider.fontSize),
                     ),
                     subtitle: Text(
-                      _isDarkTheme ? 'Dark theme enabled' : 'Light theme enabled',
-                      style: TextStyle(color: Colors.grey[600]),
+                      themeProvider.isDarkTheme ? 'Dark theme enabled' : 'Light theme enabled',
+                      style: TextStyle(
+                        fontSize: themeProvider.fontSize - 2,
+                        color: themeProvider.isDarkTheme ? Colors.grey[400] : Colors.grey[600],
+                      ),
                     ),
-                    value: _isDarkTheme,
+                    value: themeProvider.isDarkTheme,
                     onChanged: (value) {
-                      setState(() {
-                        _isDarkTheme = value;
-                      });
+                      themeProvider.setDarkTheme(value);
                     },
                     secondary: Icon(
-                      _isDarkTheme ? Icons.dark_mode : Icons.light_mode,
-                      color: _isDarkTheme ? Colors.amber : Colors.blue,
+                      themeProvider.isDarkTheme ? Icons.dark_mode : Icons.light_mode,
+                      color: themeProvider.isDarkTheme ? Colors.amber : Colors.blue,
                     ),
                   ),
                   SizedBox(height: 8),
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: themeProvider.isDarkTheme ? Colors.grey[800] : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(
+                        color: themeProvider.isDarkTheme ? Colors.grey[700]! : Colors.grey[300]!,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -157,17 +158,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               Text(
                                 'Light Theme',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: themeProvider.fontSize - 2,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey[700],
+                                  color: themeProvider.isDarkTheme ? Colors.grey[300] : Colors.grey[700],
                                 ),
                               ),
                               SizedBox(height: 4),
                               Text(
                                 'Bright interface for daytime use',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
+                                  fontSize: themeProvider.fontSize - 4,
+                                  color: themeProvider.isDarkTheme ? Colors.grey[400] : Colors.grey[600],
                                 ),
                               ),
                             ],
@@ -181,17 +182,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               Text(
                                 'Dark Theme',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: themeProvider.fontSize - 2,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey[700],
+                                  color: themeProvider.isDarkTheme ? Colors.grey[300] : Colors.grey[700],
                                 ),
                               ),
                               SizedBox(height: 4),
                               Text(
                                 'Easy on eyes for nighttime use',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
+                                  fontSize: themeProvider.fontSize - 4,
+                                  color: themeProvider.isDarkTheme ? Colors.grey[400] : Colors.grey[600],
                                 ),
                               ),
                             ],
@@ -208,6 +209,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             // Speaker Settings
             _buildSettingSection(
+              themeProvider: themeProvider,
               title: 'Speaker Settings',
               icon: Icons.person,
               child: Column(
@@ -215,29 +217,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SwitchListTile(
                     title: Text(
                       'Show Speaker Settings',
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: themeProvider.fontSize),
                     ),
                     subtitle: Text(
-                      _showSpeakerSettings ? 'Visible in app' : 'Hidden from app',
-                      style: TextStyle(color: Colors.grey[600]),
+                      themeProvider.showSpeakerSettings ? 'Visible in app' : 'Hidden from app',
+                      style: TextStyle(
+                        fontSize: themeProvider.fontSize - 2,
+                        color: themeProvider.isDarkTheme ? Colors.grey[400] : Colors.grey[600],
+                      ),
                     ),
-                    value: _showSpeakerSettings,
+                    value: themeProvider.showSpeakerSettings,
                     onChanged: (value) {
-                      setState(() {
-                        _showSpeakerSettings = value;
-                      });
+                      themeProvider.setShowSpeakerSettings(value);
                     },
                     secondary: Icon(
-                      _showSpeakerSettings ? Icons.visibility : Icons.visibility_off,
-                      color: _showSpeakerSettings ? Colors.green : Colors.grey,
+                      themeProvider.showSpeakerSettings ? Icons.visibility : Icons.visibility_off,
+                      color: themeProvider.showSpeakerSettings ? Colors.green : Colors.grey,
                     ),
                   ),
                   SizedBox(height: 16),
-                  if (_showSpeakerSettings) ...[
+                  if (themeProvider.showSpeakerSettings) ...[
                     Text(
                       'Number of Speakers',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: themeProvider.fontSize,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -247,11 +250,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [1, 2, 3, 4].map((number) {
                         return _buildSpeakerOption(
                           number: number,
-                          isSelected: _numberOfSpeakers == number,
+                          isSelected: themeProvider.numberOfSpeakers == number,
                           onTap: () {
-                            setState(() {
-                              _numberOfSpeakers = number;
-                            });
+                            themeProvider.setNumberOfSpeakers(number);
                           },
                         );
                       }).toList(),
@@ -260,9 +261,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: themeProvider.isDarkTheme ? Colors.grey[800] : Colors.grey[100],
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
+                        border: Border.all(
+                          color: themeProvider.isDarkTheme ? Colors.grey[700]! : Colors.grey[300]!,
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,19 +273,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Text(
                             'Speaker Configuration',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: themeProvider.fontSize - 2,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey[600],
+                              color: themeProvider.isDarkTheme ? Colors.grey[400] : Colors.grey[600],
                             ),
                           ),
                           SizedBox(height: 8),
                           Text(
-                            'Currently set to $_numberOfSpeakers speaker${_numberOfSpeakers > 1 ? 's' : ''}',
-                            style: TextStyle(fontSize: 14),
+                            'Currently set to ${themeProvider.numberOfSpeakers} speaker${themeProvider.numberOfSpeakers > 1 ? 's' : ''}',
+                            style: TextStyle(fontSize: themeProvider.fontSize - 2),
                           ),
                           SizedBox(height: 8),
                           Row(
-                            children: List.generate(_numberOfSpeakers, (index) {
+                            children: List.generate(themeProvider.numberOfSpeakers, (index) {
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: CircleAvatar(
@@ -291,7 +294,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   child: Text(
                                     'S${index + 1}',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: themeProvider.fontSize - 6,
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -315,7 +318,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: double.infinity,
               margin: EdgeInsets.symmetric(horizontal: 8),
               child: ElevatedButton(
-                onPressed: _savePreferences,
+                onPressed: () => _savePreferences(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -328,12 +331,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.save, size: 22),
+                    Icon(Icons.save, size: themeProvider.fontSize),
                     SizedBox(width: 12),
                     Text(
                       'Save Preferences',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: themeProvider.fontSize + 2,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -349,15 +352,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: double.infinity,
               margin: EdgeInsets.symmetric(horizontal: 8),
               child: TextButton(
-                onPressed: _resetToDefaults,
+                onPressed: () => _resetToDefaults(context),
                 style: TextButton.styleFrom(
                   minimumSize: Size(double.infinity, 50),
                 ),
                 child: Text(
                   'Reset to Default Settings',
                   style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
+                    fontSize: themeProvider.fontSize,
+                    color: themeProvider.isDarkTheme ? Colors.grey[400] : Colors.grey[600],
                   ),
                 ),
               ),
@@ -369,13 +372,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSettingSection({
+    required AppThemeProvider themeProvider,
     required String title,
     required IconData icon,
     required Widget child,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: _isDarkTheme ? Colors.grey[800] : Colors.white,
+        color: themeProvider.isDarkTheme ? Colors.grey[900] : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -397,7 +401,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: themeProvider.fontSize + 2,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -495,9 +499,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return 'Extra Large';
   }
 
-  void _savePreferences() {
-    // Here you would typically save to shared preferences or your state management
-    // For now, we'll just show a success message
+  void _savePreferences(BuildContext context) {
+    // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Preferences saved successfully!'),
@@ -505,30 +508,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         duration: Duration(seconds: 2),
       ),
     );
-
-    // Apply settings globally
-    _applyGlobalSettings();
   }
 
-  void _applyGlobalSettings() {
-    // This is where you would apply settings globally
-    // For example, using Provider or another state management solution
+  void _resetToDefaults(BuildContext context) {
+    final themeProvider = Provider.of<AppThemeProvider>(context, listen: false);
 
-    // Apply theme
-    // You would typically use something like:
-    // ThemeProvider.of(context).setTheme(_isDarkTheme ? ThemeMode.dark : ThemeMode.light);
-
-    // Apply font size globally
-    // You would typically pass this to your app's theme
-
-    print('Settings applied:');
-    print('- Font Size: $_fontSize');
-    print('- Dark Theme: $_isDarkTheme');
-    print('- Show Speaker Settings: $_showSpeakerSettings');
-    print('- Number of Speakers: $_numberOfSpeakers');
-  }
-
-  void _resetToDefaults() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -541,12 +525,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() {
-                _fontSize = 16.0;
-                _isDarkTheme = false;
-                _showSpeakerSettings = true;
-                _numberOfSpeakers = 2;
-              });
+              themeProvider.resetToDefaults();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

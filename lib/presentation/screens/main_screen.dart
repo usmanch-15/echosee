@@ -2,9 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:echo_see_companion/core/constants/app_colors.dart';
 import 'package:echo_see_companion/presentation/screens/settings_screen.dart';
-
-import 'history_screen.dart';
-
+import 'package:echo_see_companion/presentation/screens/history_screen.dart';
+import 'package:echo_see_companion/presentation/screens/accounts_screen.dart';
+import 'package:echo_see_companion/presentation/screens/features_screen.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -466,73 +466,104 @@ class _MainScreenState extends State<MainScreen> {
   void _showMenuDrawer() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // यह line important है
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Container(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 60,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5, // 50% screen height
+          minChildSize: 0.4, // minimum 40%
+          maxChildSize: 0.8, // maximum 80%
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Column(
+                children: [
+                  // Drag Handle
+                  Container(
+                    width: 60,
+                    height: 4,
+                    margin: EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  // Menu Title
+                  Text(
+                    'Menu',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+
+                  // Menu Items with Scroll
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      child: Column(
+                        children: [
+                          _buildMenuOption(
+                            icon: Icons.account_circle,
+                            title: 'Accounts',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _navigateToAccounts();
+                            },
+                          ),
+                          _buildMenuOption(
+                            icon: Icons.history,
+                            title: 'History',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _viewAllTranscripts();
+                            },
+                          ),
+                          _buildMenuOption(
+                            icon: Icons.featured_play_list,
+                            title: 'Features',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _navigateToFeatures();
+                            },
+                          ),
+                          _buildMenuOption(
+                            icon: Icons.settings,
+                            title: 'Settings',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _navigateToSettings();
+                            },
+                          ),
+                          SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Close Button
+                  Container(
+                    width: double.infinity,
+                    margin: EdgeInsets.only(bottom: 20, top: 10),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 50),
+                        backgroundColor: Colors.grey[100],
+                        foregroundColor: Colors.grey[800],
+                      ),
+                      child: Text('Close'),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 20),
-              Text(
-                'Menu',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 30),
-              _buildMenuOption(
-                icon: Icons.account_circle,
-                title: 'Accounts',
-                onTap: () {
-                  Navigator.pop(context);
-                  // Navigate to accounts screen
-                },
-              ),
-              _buildMenuOption(
-                icon: Icons.history,
-                title: 'History',
-                onTap: _viewAllTranscripts,
-              ),
-              _buildMenuOption(
-                icon: Icons.featured_play_list,
-                title: 'Features',
-                onTap: () {
-                  Navigator.pop(context);
-                  // Navigate to features screen
-                },
-              ),
-              _buildMenuOption(
-                icon: Icons.settings,
-                title: 'Settings',
-                onTap: () {
-                  Navigator.pop(context);
-                  _navigateToSettings();
-                },
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                  backgroundColor: Colors.grey[100],
-                  foregroundColor: Colors.grey[800],
-                ),
-                child: Text('Close'),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -551,6 +582,20 @@ class _MainScreenState extends State<MainScreen> {
       ),
       trailing: Icon(Icons.chevron_right, color: Colors.grey),
       onTap: onTap,
+    );
+  }
+
+  void _navigateToAccounts() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AccountsScreen()),
+    );
+  }
+
+  void _navigateToFeatures() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FeaturesScreen()),
     );
   }
 
