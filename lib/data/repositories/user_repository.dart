@@ -13,6 +13,8 @@ abstract class UserRepository {
   Future<void> restorePremium();
   Future<void> resetPassword(String email);
   Future<bool> isEmailAvailable(String email);
+  Future<void> signInWithGoogle();
+  Future<void> signInWithFacebook();
 }
 
 class LocalUserRepository implements UserRepository {
@@ -23,6 +25,20 @@ class LocalUserRepository implements UserRepository {
   Future<User?> getCurrentUser() async {
     await Future.delayed(Duration(milliseconds: 200));
     return _currentUser;
+  }
+
+  @override
+  Future<void> signInWithGoogle() async {
+    await Future.delayed(Duration(seconds: 1));
+    // Simulate google login
+    print('Signed in with Google');
+  }
+
+  @override
+  Future<void> signInWithFacebook() async {
+    await Future.delayed(Duration(seconds: 1));
+    // Simulate facebook login
+    print('Signed in with Facebook');
   }
 
   @override

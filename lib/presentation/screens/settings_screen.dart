@@ -310,6 +310,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
+ 
+            SizedBox(height: 24),
+
+            // Notification Settings
+            _buildSettingSection(
+              themeProvider: themeProvider,
+              title: 'General Settings',
+              icon: Icons.settings,
+              child: Column(
+                children: [
+                   SwitchListTile(
+                    title: Text(
+                      'Notifications',
+                      style: TextStyle(fontSize: themeProvider.fontSize),
+                    ),
+                    subtitle: Text(
+                      'Receive important updates',
+                      style: TextStyle(fontSize: themeProvider.fontSize - 2),
+                    ),
+                    value: themeProvider.notificationsEnabled,
+                    onChanged: (value) {
+                      themeProvider.setNotificationsEnabled(value);
+                    },
+                    secondary: Icon(Icons.notifications),
+                  ),
+                  SwitchListTile(
+                    title: Text(
+                      'Auto-Save',
+                      style: TextStyle(fontSize: themeProvider.fontSize),
+                    ),
+                    subtitle: Text(
+                      'Automatically save transcripts',
+                      style: TextStyle(fontSize: themeProvider.fontSize - 2),
+                    ),
+                    value: themeProvider.autoSave,
+                    onChanged: (value) {
+                      themeProvider.setAutoSave(value);
+                    },
+                    secondary: Icon(Icons.save_outlined),
+                  ),
+                ],
+              ),
+            ),
 
             SizedBox(height: 32),
 
@@ -331,10 +374,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.save, size: themeProvider.fontSize),
+                    Icon(Icons.cloud_upload, size: themeProvider.fontSize),
                     SizedBox(width: 12),
                     Text(
-                      'Save Preferences',
+                      'Sync Settings to Cloud',
                       style: TextStyle(
                         fontSize: themeProvider.fontSize + 2,
                         fontWeight: FontWeight.bold,

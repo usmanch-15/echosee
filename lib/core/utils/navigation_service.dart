@@ -9,6 +9,7 @@ import '../../presentation/screens/settings_screen.dart';
 import '../../presentation/screens/signup_screen.dart';
 import '../../presentation/screens/splash_screen.dart';
 import '../../presentation/screens/transcript_list_screen.dart';
+import '../../presentation/screens/reset_password_screen.dart';
 
 class NavigationService {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -75,6 +76,8 @@ class NavigationService {
         return MaterialPageRoute(builder: (_) => ProfileScreen());
       case '/premium':
         return MaterialPageRoute(builder: (_) => PremiumFeaturesScreen());
+      case '/reset-password':
+        return MaterialPageRoute(builder: (_) => const ResetPasswordScreen());
       
       default:
         return MaterialPageRoute(

@@ -1,331 +1,195 @@
 // lib/presentation/screens/history_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:echo_see_companion/core/constants/app_colors.dart';
+import 'package:echo_see_companion/providers/transcript_provider.dart';
+import 'package:echo_see_companion/providers/auth_provider.dart';
+import 'package:echo_see_companion/data/models/transcript_model.dart';
+import 'package:echo_see_companion/providers/app_theme_provider.dart';
 import 'package:echo_see_companion/presentation/screens/premium_features_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> transcripts;
   final String? selectedTranscriptId;
 
-  HistoryScreen({
-    required this.transcripts,
-    this.selectedTranscriptId,
-  });
+  HistoryScreen({this.selectedTranscriptId});
 
   @override
   _HistoryScreenState createState() => _HistoryScreenState();
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  late List<Map<String, dynamic>> _transcripts;
   String? _selectedId;
-  bool _isSearching = false;
-  TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _transcripts = List.from(widget.transcripts);
     _selectedId = widget.selectedTranscriptId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<TranscriptProvider>(context, listen: false).loadTranscripts();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredTranscripts = _isSearching && _searchController.text.isNotEmpty
-        ? _transcripts.where((transcript) =>
-        transcript['text'].toLowerCase().contains(_searchController.text.toLowerCase()))
-        : _transcripts;
+    final transcriptProvider = Provider.of<TranscriptProvider>(context);
+    final isPremium = Provider.of<AuthProvider>(context).isPremium;
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context, _transcripts),
-        ),
-        title: _isSearching
-            ? TextField(
-          controller: _searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'Search transcripts...',
-            border: InputBorder.none,
-          ),
-          onChanged: (value) {
-            setState(() {});
-          },
-        )
-            : Text(
-          'History',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
+        title: Text('History'),
         actions: [
-          if (!_isSearching)
-            IconButton(
-              icon: Icon(Icons.search),
-              onPressed: () {
-                setState(() {
-                  _isSearching = true;
-                });
-              },
-            ),
-          if (_isSearching)
-            IconButton(
-              icon: Icon(Icons.close),
-              onPressed: () {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                });
-              },
-            ),
-          if (!_isSearching)
-            IconButton(
-              icon: Icon(Icons.star, color: Colors.amber),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => PremiumFeaturesScreen()),
-                );
-              },
-              tooltip: 'Premium Features',
-            ),
+          IconButton(
+            icon: Icon(Icons.file_download),
+            onPressed: () => _exportAllTranscripts(),
+          ),
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Search feature coming soon!'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: Column(
         children: [
-          // Premium Banner (only if user is not premium)
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Colors.amber[50],
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.amber[800], size: 20),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Unlock unlimited history with Premium',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.amber[800],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => PremiumFeaturesScreen()),
-                    );
-                  },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.amber,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'UPGRADE',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Transcript count
-          Container(
-            padding: EdgeInsets.all(16),
-            color: Colors.grey[50],
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${filteredTranscripts.length} Transcript${filteredTranscripts.length != 1 ? 's' : ''}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    if (filteredTranscripts.isNotEmpty)
-                      Text(
-                        'Limited to 10 transcripts in free version',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                  ],
-                ),
-                if (filteredTranscripts.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: _exportAllTranscripts,
-                    icon: Icon(Icons.download, size: 18),
-                    label: Text('Export All'),
-                  ),
-              ],
-            ),
-          ),
-
-          // Transcripts List
+          if (!isPremium) _buildPremiumBanner(),
           Expanded(
-            child: filteredTranscripts.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.history,
-                    size: 80,
-                    color: Colors.grey[300],
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    _isSearching && _searchController.text.isNotEmpty
-                        ? 'No matching transcripts found'
-                        : 'No transcripts yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    _isSearching && _searchController.text.isNotEmpty
-                        ? 'Try a different search term'
-                        : 'Start recording to create transcripts',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[400],
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: Icon(Icons.mic),
-                    label: Text('Start Recording'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-            )
-                : ListView.builder(
-              itemCount: filteredTranscripts.length,
-              itemBuilder: (context, index) {
-                final transcript = filteredTranscripts.elementAt(index);
-                return _buildTranscriptItem(transcript, index);
-              },
-            ),
+            child: _buildTranscriptList(transcriptProvider),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTranscriptItem(Map<String, dynamic> transcript, int index) {
-    final isSelected = _selectedId == transcript['id'];
+  Widget _buildPremiumBanner() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: Colors.amber[100],
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: Colors.amber[800], size: 20),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Free version stores only the last 5 transcripts. Upgrade for unlimited history.',
+              style: TextStyle(fontSize: 12, color: Colors.amber[900]),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => PremiumFeaturesScreen()),
+              );
+            },
+            child: Text('UPGRADE', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTranscriptList(TranscriptProvider provider) {
+    if (provider.isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    if (provider.error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Error: ${provider.error}'),
+            ElevatedButton(
+              onPressed: () => provider.loadTranscripts(),
+              child: Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (provider.transcripts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history, size: 64, color: Colors.grey[300]),
+            SizedBox(height: 16),
+            Text(
+              'No transcripts yet',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: provider.transcripts.length,
+      itemBuilder: (context, index) {
+        final transcript = provider.transcripts[index];
+        return _buildTranscriptItem(transcript, index);
+      },
+    );
+  }
+
+  Widget _buildTranscriptItem(Transcript transcript, int index) {
+    final isSelected = _selectedId == transcript.id;
+
+    final themeProvider = Provider.of<AppThemeProvider>(context);
 
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: isSelected ? 4 : 2,
-      color: isSelected ? AppColors.primary.withOpacity(0.05) : null,
+      elevation: isSelected ? 4 : 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [
           ListTile(
             leading: CircleAvatar(
               backgroundColor: AppColors.primary.withOpacity(0.1),
-              child: Icon(
-                Icons.description,
-                color: AppColors.primary,
-              ),
+              child: Icon(Icons.description, color: AppColors.primary),
             ),
             title: Text(
-              transcript['text'],
+              transcript.title.isNotEmpty ? transcript.title : transcript.content,
               style: TextStyle(
                 fontWeight: FontWeight.w500,
-                fontSize: 16,
+                fontSize: themeProvider.fontSize,
               ),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 4),
-                Text(
-                  '${transcript['time']} • ${transcript['date']}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+            subtitle: Text(
+              '${transcript.formattedDate} • ${transcript.formattedDuration}',
+              style: TextStyle(fontSize: themeProvider.fontSize - 3),
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Show lock icon for transcripts beyond limit in free version
-                if (index >= 10)
-                  Icon(
-                    Icons.lock_outline,
-                    color: Colors.amber,
-                    size: 20,
-                  ),
-                if (index < 10)
-                  IconButton(
-                    icon: Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () => _deleteTranscript(transcript['id']),
-                  ),
-                SizedBox(width: 4),
                 IconButton(
                   icon: Icon(
-                    isSelected ? Icons.expand_less : Icons.expand_more,
-                    color: AppColors.primary,
+                    transcript.isStarred ? Icons.star : Icons.star_border,
+                    color: transcript.isStarred ? Colors.amber : Colors.grey,
                   ),
-                  onPressed: () {
-                    if (index >= 10) {
-                      // Show premium upgrade dialog for locked transcripts
-                      _showPremiumUpgradeDialog();
-                    } else {
-                      setState(() {
-                        _selectedId = isSelected ? null : transcript['id'];
-                      });
-                    }
-                  },
+                  onPressed: () => Provider.of<TranscriptProvider>(context, listen: false).toggleStar(transcript.id),
                 ),
+                Icon(isSelected ? Icons.expand_less : Icons.expand_more),
               ],
             ),
             onTap: () {
-              if (index >= 10) {
-                // Show premium upgrade dialog for locked transcripts
-                _showPremiumUpgradeDialog();
-              } else {
-                setState(() {
-                  _selectedId = isSelected ? null : transcript['id'];
-                });
-              }
+              setState(() {
+                _selectedId = isSelected ? null : transcript.id;
+              });
             },
           ),
-
-          // Expanded content
-          if (isSelected && index < 10)
+          if (isSelected)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
@@ -334,49 +198,68 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Divider(),
                   SizedBox(height: 8),
                   Text(
-                    'Full Transcript:',
+                    transcript.content,
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[700],
+                      fontSize: themeProvider.fontSize - 1,
+                      height: 1.5,
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    transcript['fullText'] ?? transcript['text'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[800],
+                  if (transcript.speakerSegments.isNotEmpty) ...[
+                    SizedBox(height: 16),
+                    Text(
+                      'Speakers (Tap to name):',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
                     ),
-                  ),
-                  SizedBox(height: 16),
+                    SizedBox(height: 8),
+                    _buildSpeakerList(transcript),
+                  ],
+                  if (transcript.hasTranslation) ...[
+                    SizedBox(height: 16),
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.withOpacity(0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.translate, size: 16, color: Colors.orange),
+                              SizedBox(width: 8),
+                              Text(
+                                'Translation (${transcript.translatedLanguage})',
+                                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            transcript.translatedContent ?? '',
+                            style: TextStyle(fontStyle: FontStyle.italic),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  SizedBox(height: 20),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      OutlinedButton.icon(
-                        onPressed: () => _copyToClipboard(transcript['fullText'] ?? transcript['text']),
-                        icon: Icon(Icons.copy, size: 18),
-                        label: Text('Copy'),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppColors.primary),
-                        ),
+                      _buildActionButton(Icons.copy, 'Copy', () => _copyToClipboard(transcript.content)),
+                      _buildActionButton(Icons.share, 'Share', () => _shareTranscript(transcript)),
+                      _buildActionButton(
+                        Icons.translate, 
+                        transcript.hasTranslation ? 'Re-translate' : 'Translate', 
+                        () {
+                          final isPrem = Provider.of<AuthProvider>(context, listen: false).isPremium;
+                          if (isPrem) _showTranslateDialog(transcript);
+                          else _showPremiumUpgradeDialog('Translation');
+                        }
                       ),
-                      OutlinedButton.icon(
-                        onPressed: () => _shareTranscript(transcript),
-                        icon: Icon(Icons.share, size: 18),
-                        label: Text('Share'),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppColors.primary),
-                        ),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () => _editTranscript(transcript),
-                        icon: Icon(Icons.edit, size: 18),
-                        label: Text('Edit'),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppColors.primary),
-                        ),
-                      ),
+                      _buildActionButton(Icons.delete_outline, 'Delete', () => _deleteTranscript(transcript.id), color: Colors.red),
                     ],
                   ),
                 ],
@@ -387,303 +270,174 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  void _showPremiumUpgradeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.star, color: Colors.amber),
-              SizedBox(width: 10),
-              Text('Upgrade to Premium'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'This transcript requires Premium subscription.',
-                style: TextStyle(fontSize: 14),
-              ),
-              SizedBox(height: 10),
-              Text(
-                'With Premium you get:',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 5),
-              _buildFeatureList('✓ Unlimited transcript history'),
-              _buildFeatureList('✓ No ads'),
-              _buildFeatureList('✓ Export in multiple formats'),
-              _buildFeatureList('✓ Priority support'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Maybe Later'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => PremiumFeaturesScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-              child: Text('View Plans'),
-            ),
-          ],
-        );
-      },
+  Widget _buildActionButton(IconData icon, String label, VoidCallback onPressed, {Color? color}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(icon, color: color ?? AppColors.primary),
+          onPressed: onPressed,
+        ),
+        Text(label, style: TextStyle(fontSize: 10, color: color ?? AppColors.primary)),
+      ],
     );
   }
 
-  Widget _buildFeatureList(String feature) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Text(
-        feature,
-        style: TextStyle(fontSize: 12),
+  Widget _buildSpeakerList(Transcript transcript) {
+    final Map<int, String> speakerMap = {};
+    for (var segment in transcript.speakerSegments) {
+      if (!speakerMap.containsKey(segment.speakerId)) {
+        speakerMap[segment.speakerId] = segment.speakerName ?? 'Speaker ${segment.speakerId}';
+      }
+    }
+
+    return Wrap(
+      spacing: 8,
+      children: speakerMap.entries.map((entry) {
+        return ActionChip(
+          avatar: CircleAvatar(
+            backgroundColor: AppColors.speakerColors[entry.key % AppColors.speakerColors.length],
+            child: Text('${entry.key}', style: TextStyle(fontSize: 10, color: Colors.white)),
+          ),
+          label: Text(entry.value),
+          onPressed: () {
+            final isPrem = Provider.of<AuthProvider>(context, listen: false).isPremium;
+            if (isPrem) _editSpeakerName(transcript.id, entry.key, entry.value);
+            else _showPremiumUpgradeDialog('Speaker Labeling');
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  void _showPremiumUpgradeDialog(String feature) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.star, color: Colors.amber),
+            SizedBox(width: 8),
+            Text('Premium Feature'),
+          ],
+        ),
+        content: Text('$feature is only available for Premium users. Upgrade now to unlock all features!'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Later')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => PremiumFeaturesScreen()));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            child: Text('Upgrade'),
+          ),
+        ],
       ),
     );
+  }
+
+  void _editSpeakerName(String transcriptId, int speakerId, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Name Speaker $speakerId'),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(hintText: 'e.g. Roman'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              Provider.of<TranscriptProvider>(context, listen: false)
+                  .updateSpeakerName(transcriptId, speakerId, controller.text);
+              Navigator.pop(context);
+            },
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTranslateDialog(Transcript transcript) {
+    final languages = [
+      {'name': 'Spanish', 'code': 'ES'},
+      {'name': 'French', 'code': 'FR'},
+      {'name': 'German', 'code': 'DE'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Translate to...'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: languages.map((lang) => ListTile(
+            title: Text(lang['name']!),
+            onTap: () {
+              Navigator.pop(context);
+              Provider.of<TranscriptProvider>(context, listen: false)
+                  .translateTranscript(transcript.id, lang['code']!);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Translating...'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          )).toList(),
+        ),
+      ),
+    );
+  }
+
+  void _copyToClipboard(String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _shareTranscript(Transcript transcript) {
+    // Implement share logic
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Share feature coming soon!')));
   }
 
   void _deleteTranscript(String id) {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Delete Transcript'),
-          content: Text('Are you sure you want to delete this transcript?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _transcripts.removeWhere((item) => item['id'] == id);
-                  if (_selectedId == id) {
-                    _selectedId = null;
-                  }
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Transcript deleted'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _deleteAllTranscripts() {
-    if (_transcripts.isEmpty) return;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Delete All Transcripts'),
-          content: Text('Are you sure you want to delete all ${_transcripts.length} transcripts? This action cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _transcripts.clear();
-                  _selectedId = null;
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('All transcripts deleted'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: Text('Delete All'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _copyToClipboard(String text) {
-    // In a real app, you would use: Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Copied to clipboard'),
-        backgroundColor: Colors.green,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Transcript'),
+        content: Text('Are you sure you want to delete this transcript?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              Provider.of<TranscriptProvider>(context, listen: false).deleteTranscript(id);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Delete'),
+          ),
+        ],
       ),
     );
   }
 
-  void _shareTranscript(Map<String, dynamic> transcript) {
-    // In a real app, you would use the share plugin
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Share Transcript'),
-          content: Text('Share "${transcript['text']}"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Transcript shared'),
-                    backgroundColor: Colors.blue,
-                  ),
-                );
-              },
-              child: Text('Share'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _editTranscript(Map<String, dynamic> transcript) {
-    TextEditingController controller = TextEditingController(text: transcript['fullText'] ?? transcript['text']);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Edit Transcript'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: controller,
-                  maxLines: 5,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Transcript Text',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  final int index = _transcripts.indexWhere((item) => item['id'] == transcript['id']);
-                  if (index != -1) {
-                    _transcripts[index]['fullText'] = controller.text;
-                    if (_transcripts[index]['text'].length > 50) {
-                      _transcripts[index]['text'] = controller.text.substring(0, 50) + '...';
-                    } else {
-                      _transcripts[index]['text'] = controller.text;
-                    }
-                  }
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Transcript updated'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
-              child: Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _exportAllTranscripts() {
-    // Check if user can export (only first 10 in free version)
-    final exportableTranscripts = _transcripts.take(10).toList();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Export Transcripts'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Export ${exportableTranscripts.length} transcripts as a file?'),
-              if (_transcripts.length > 10)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    'Note: Free version limits export to first 10 transcripts. Upgrade to Premium for unlimited exports.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.amber[800],
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${exportableTranscripts.length} transcripts exported'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
-              child: Text('Export'),
-            ),
-            if (_transcripts.length > 10)
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => PremiumFeaturesScreen()),
-                  );
-                },
-                child: Text(
-                  'Upgrade',
-                  style: TextStyle(color: Colors.amber[800]),
-                ),
-              ),
-          ],
-        );
-      },
+    // Implement export logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Export feature coming soon!'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }
