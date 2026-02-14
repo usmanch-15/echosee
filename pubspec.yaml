@@ -53,21 +53,30 @@ dependencies:
   # Hardware & Permissions
   camera: ^0.11.0+2
   permission_handler: ^11.3.1
-  sound_stream: ^0.3.0
+  sound_stream: ^0.4.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
   mocktail: ^1.0.4
+  flutter_launcher_icons: ^0.13.1
 
   integration_test:
     sdk: flutter
 dependency_overrides:
   permission_handler: ^11.3.1
 
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/app_icon.png"
+  min_sdk_android: 21
+
 flutter:
   uses-material-design: true
   assets:
     - assets/models/en.zip
     - assets/templates/
+    - assets/app_icon.png
+
