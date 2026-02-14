@@ -43,7 +43,7 @@ void main() {
           title: 'Test',
           content: 'Content',
           date: DateTime.now(),
-          duration: Duration(minutes: 1),
+          duration: const Duration(minutes: 1),
           language: 'ENG',
           speakerSegments: [],
         )
@@ -66,7 +66,7 @@ void main() {
         title: 'New',
         content: 'New content',
         date: DateTime.now(),
-        duration: Duration(seconds: 30),
+        duration: const Duration(seconds: 30),
         language: 'ENG',
         speakerSegments: [],
       );
@@ -88,7 +88,7 @@ void main() {
         title: 'Del',
         content: 'Del',
         date: DateTime.now(),
-        duration: Duration(seconds: 10),
+        duration: const Duration(seconds: 10),
         language: 'ENG',
         speakerSegments: [],
       );
@@ -112,10 +112,10 @@ void main() {
         title: 'Spk',
         content: 'Spk',
         date: DateTime.now(),
-        duration: Duration(seconds: 10),
+        duration: const Duration(seconds: 10),
         language: 'ENG',
         speakerSegments: [
-          SpeakerSegment(speakerId: 1, text: 'Hello', startTime: Duration.zero, endTime: Duration(seconds: 5))
+          SpeakerSegment(speakerId: 1, text: 'Hello', startTime: Duration.zero, endTime: const Duration(seconds: 5))
         ],
       );
 
