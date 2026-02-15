@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'providers/app_theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transcript_provider.dart';
+import 'providers/payment_provider.dart';
 import 'core/utils/navigation_service.dart';
 
 void main() async {
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AppThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => TranscriptProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentProvider()),
       ],
       child: Consumer2<AppThemeProvider, AuthProvider>(
         builder: (context, themeProvider, authProvider, _) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'sound_recognition_screen.dart';
 import 'lip_tracking_screen.dart';
+import 'premium_features_screen.dart';
 
 class FeaturesScreen extends StatelessWidget {
   const FeaturesScreen({super.key});
@@ -29,6 +30,14 @@ class FeaturesScreen extends StatelessWidget {
               'Extract localized mouth ROI for visual speech recognition.',
               Icons.face,
               () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LipTrackingScreen())),
+            ),
+            const SizedBox(height: 16),
+            _buildFeatureCard(
+              context,
+              'Premium Subscription',
+              'Unlock advanced AI features and unlimited translation.',
+              Icons.star,
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PremiumFeaturesScreen())),
             ),
           ],
         ),

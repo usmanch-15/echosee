@@ -38,16 +38,21 @@ dependencies:
   url_launcher: ^6.2.0
   
   # Audio/Speech
-  vosk_flutter: ^0.3.0
+  vosk_flutter: ^0.3.48
   speech_to_text: ^7.3.0
   audio_session: ^0.1.11
   just_audio: ^0.9.35
   
   # Charts & Graphs
   fl_chart: ^0.66.0
+  
+  # Payments
+  http: ^0.13.6
+  webview_flutter: ^4.7.0
+  font_awesome_flutter: ^10.7.0 # For payment icons
 
   # AI & Machine Learning
-  tflite_flutter: ^0.10.0
+  tflite_flutter: ^0.12.0
   google_mlkit_face_detection: ^0.11.0
   
   # Hardware & Permissions
@@ -64,6 +69,9 @@ dev_dependencies:
 
   integration_test:
     sdk: flutter
+  bdd_widget_test: ^1.5.0
+  build_runner: ^2.4.9
+
 dependency_overrides:
   permission_handler: ^11.3.1
 

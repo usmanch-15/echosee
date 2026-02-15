@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:echo_see_companion/core/constants/app_colors.dart';
 import 'package:echo_see_companion/providers/auth_provider.dart';
+import 'payment/payment_selection_screen.dart';
 
 class PremiumFeaturesScreen extends StatelessWidget {
   const PremiumFeaturesScreen({super.key});
@@ -69,7 +70,14 @@ class PremiumFeaturesScreen extends StatelessWidget {
               const CircularProgressIndicator()
             else
               ElevatedButton(
-                onPressed: () => authProvider.togglePremium(),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PaymentSelectionScreen(amount: 2500.0),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isPremium ? Colors.grey : Colors.amber,
                   foregroundColor: isPremium ? Colors.white : Colors.black,
@@ -79,7 +87,7 @@ class PremiumFeaturesScreen extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  isPremium ? 'Downgrade (Mock)' : 'Upgrade Now - \$9.99/mo',
+                  isPremium ? 'Premium Active' : 'Upgrade Now - PKR 2,500/mo',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

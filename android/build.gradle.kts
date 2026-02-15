@@ -21,20 +21,32 @@ subprojects {
 }
 
 subprojects {
-    plugins.whenPluginAdded {
-        if (this.javaClass.name.contains("com.android.build.gradle.LibraryPlugin") || 
-            this.javaClass.name.contains("com.android.build.gradle.AppPlugin")) {
-            val androidMetadata = project.extensions.findByName("android")
-            if (androidMetadata != null) {
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "androidx.browser" && requested.name == "browser") {
+                useVersion("1.8.0")
+            }
+            if (requested.group == "androidx.core" && (requested.name == "core" || requested.name == "core-ktx")) {
+                if (requested.version?.startsWith("1.17") == true || requested.version?.startsWith("1.15") == true) {
+                    useVersion("1.13.1")
+                }
+            }
+        }
+    }
+}
+
+subprojects {
+    plugins.all {
+        if (this.javaClass.name.contains("com.android.build.gradle.LibraryPlugin")) {
+            val android = project.extensions.findByName("android")
+            if (android != null) {
                 try {
-                    val namespaceMethod = androidMetadata.javaClass.getMethod("getNamespace")
-                    val currentNamespace = namespaceMethod.invoke(androidMetadata)
-                    if (currentNamespace == null) {
-                        val setNamespace = androidMetadata.javaClass.getMethod("setNamespace", String::class.java)
-                        setNamespace.invoke(androidMetadata, "com.echosee.dependency.${project.name.replace(":", ".").replace("-", ".")}")
-                    }
+                    val namespaceMethod = android.javaClass.methods.find { it.name == "setNamespace" && it.parameterTypes.size == 1 && it.parameterTypes[0] == String::class.java }
+                    // Special case for vosk_flutter to match its Manifest package
+                    val targetNamespace = if (project.name == "vosk_flutter") "org.vosk.vosk_flutter" else "com.echosee.dependency.${project.name.replace(":", ".")}"
+                    namespaceMethod?.invoke(android, targetNamespace)
                 } catch (e: Exception) {
-                    // Ignore if method not found
+                    // Ignore
                 }
             }
         }

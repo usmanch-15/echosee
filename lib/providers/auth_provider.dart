@@ -145,6 +145,17 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // DEMO helper method
+  void enablePremiumAccess() {
+    if (_currentUser != null) {
+      _currentUser = _currentUser!.copyWith(
+        isPremium: true,
+        premiumExpiry: DateTime.now().add(const Duration(days: 30)),
+      );
+      notifyListeners();
+    }
+  }
+
   Future<void> togglePremium() async {
     if (_currentUser == null) return;
     

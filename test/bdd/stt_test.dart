@@ -1,40 +1,38 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:echo_see_companion/services/speech_service.dart';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-class MockSpeechService extends Mock implements SpeechService {}
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import './step/the_app_is_initialized.dart';
+import './step/the_vosk_model_for_english_is_loaded.dart';
+import './step/i_tap_the_start_recording_button.dart';
+import './step/i_speak_hello_how_are_you.dart';
+import './step/i_should_see_the_text_hello_how_are_you_on_the_screen.dart';
+import './step/i_am_currently_recording.dart';
+import './step/i_tap_the_stop_recording_button.dart';
+import './step/the_recording_should_stop.dart';
+import './step/a_new_transcript_should_be_saved_in_the_history.dart';
 
 void main() {
-  group('Speech to Text BDD Scenarios', () {
-    late SpeechService mockService;
+  group('''Offline Speech to Text''', () {
+    Future<void> bddSetUp(WidgetTester tester) async {
+      await theAppIsInitialized(tester);
+      await theVoskModelForEnglishIsLoaded(tester);
+    }
 
-    setUp(() {
-      mockService = MockSpeechService();
+    testWidgets('''Basic Real-time Transcription''', (tester) async {
+      await bddSetUp(tester);
+      await iTapTheStartRecordingButton(tester);
+      await iSpeakHelloHowAreYou(tester);
+      await iShouldSeeTheTextHelloHowAreYouOnTheScreen(tester);
     });
-
-    test('Scenario: Basic Real-time Transcription', () async {
-      // Given
-      when(() => mockService.initialize()).thenAnswer((_) async => {});
-      when(() => mockService.startListening()).thenAnswer((_) async => {});
-      when(() => mockService.textStream).thenAnswer((_) => Stream.fromIterable(['hello', 'hello how', 'hello how are you']));
-
-      // When
-      await mockService.startListening();
-
-      // Then
-      expect(mockService.textStream, emitsInOrder(['hello', 'hello how', 'hello how are you']));
-      verify(() => mockService.startListening()).called(1);
-    });
-
-    test('Scenario: Stopping Transcription', () async {
-      // Given
-      when(() => mockService.stopListening()).thenAnswer((_) async => {});
-      
-      // When
-      await mockService.stopListening();
-
-      // Then
-      verify(() => mockService.stopListening()).called(1);
+    testWidgets('''Stopping Transcription''', (tester) async {
+      await bddSetUp(tester);
+      await iAmCurrentlyRecording(tester);
+      await iTapTheStopRecordingButton(tester);
+      await theRecordingShouldStop(tester);
+      await aNewTranscriptShouldBeSavedInTheHistory(tester);
     });
   });
 }
