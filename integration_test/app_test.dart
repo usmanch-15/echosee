@@ -4,13 +4,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:echo_see_companion/main.dart' as app;
 import 'package:echo_see_companion/presentation/screens/sound_recognition_screen.dart';
 import 'package:echo_see_companion/presentation/screens/lip_tracking_screen.dart';
+import 'package:integration_test/integration_test.dart'
+    show IntegrationTestWidgetsFlutterBinding;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('EchoSee AI Features BDD Tests', () {
-    
-    testWidgets('Scenario: Siren detected in Sound Recognition Screen', (tester) async {
+    testWidgets('Scenario: Siren detected in Sound Recognition Screen',
+        (tester) async {
       // Given the app is running
       app.main();
       await tester.pumpAndSettle();
@@ -33,13 +35,14 @@ void main() {
 
       // And when a siren is detected (Simulating the state change if service was mocked)
       // In a real integration test, we would feed mock data to the stream
-      
+
       // Verification: Check if alerts are displayed based on results
       // Since we can't easily trigger the hardware mic in tests, we verify UI components
       expect(find.byType(LinearProgressIndicator), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('Scenario: Face detected in Lip Tracking Screen', (tester) async {
+    testWidgets('Scenario: Face detected in Lip Tracking Screen',
+        (tester) async {
       // Given I am on the Lip Tracking Screen
       await tester.pumpWidget(const MaterialApp(
         home: LipTrackingScreen(),

@@ -1,9 +1,7 @@
 // lib/services/speech_service.dart
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:vosk_flutter/vosk_flutter.dart';
-import 'package:sound_stream/sound_stream.dart';
+// import 'package:vosk_flutter/vosk_flutter.dart';  // Temporarily disabled
 import 'package:permission_handler/permission_handler.dart';
 
 enum SpeechRecognitionState {
@@ -16,18 +14,18 @@ enum SpeechRecognitionState {
 
 class SpeechService {
   SpeechRecognitionState _state = SpeechRecognitionState.notStarted;
-  final StreamController<String> _textStream = StreamController<String>.broadcast();
+  final StreamController<String> _textStream =
+      StreamController<String>.broadcast();
   final StreamController<SpeechRecognitionState> _stateStream =
-  StreamController<SpeechRecognitionState>.broadcast();
-  final StreamController<double> _confidenceStream = StreamController<double>.broadcast();
+      StreamController<SpeechRecognitionState>.broadcast();
+  final StreamController<double> _confidenceStream =
+      StreamController<double>.broadcast();
 
   final List<String> _recognizedText = [];
-  
-  // Vosk & Audio Objects
-  VoskFlutterPlugin? _vosk;
-  Model? _model;
-  Recognizer? _recognizer;
-  final RecorderStream _recorder = RecorderStream();
+
+  // Vosk & Audio Objects (disabled temporarily)
+  // VoskFlutterPlugin? _vosk;
+  dynamic _recorder;
   StreamSubscription? _audioSubscription;
 
   Stream<String> get textStream => _textStream.stream;
@@ -39,36 +37,41 @@ class SpeechService {
   Future<void> initialize() async {
     try {
       _updateState(SpeechRecognitionState.processing);
-      
-      _vosk = VoskFlutterPlugin.instance();
-      
-      // Load model from assets
-      // Note: This takes some time on first run as it unzips
-      final modelLoader = ModelLoader();
-      final modelPath = await modelLoader.loadFromAssets('assets/models/en.zip');
-      
-      _model = await _vosk!.createModel(modelPath);
-      
-      _recognizer = await _vosk!.createRecognizer(
-        model: _model!,
-        sampleRate: 16000,
-      );
-      
-      await _recorder.initialize();
-      
+
+      // Vosk initialization disabled temporarily due to dependency issues
+      // _vosk = VoskFlutterPlugin.instance();
+
+      // // Load model from assets
+      // // Note: This takes some time on first run as it unzips
+      // final modelLoader = ModelLoader();
+      // final modelPath =
+      //     await modelLoader.loadFromAssets('assets/models/en.zip');
+
+      // _model = await _vosk!.createModel(modelPath);
+
+      // _recognizer = await _vosk!.createRecognizer(
+      //   model: _model!,
+      //   sampleRate: 16000,
+      // );
+
+      // Initialize recorder if available
+      if (_recorder != null && (_recorder as dynamic).initialize != null) {
+        await (_recorder as dynamic).initialize();
+      }
+
       _updateState(SpeechRecognitionState.notStarted);
     } catch (e) {
-      debugPrint("Vosk Initialization Error: $e");
+      debugPrint("Speech Initialization Error: $e");
       _updateState(SpeechRecognitionState.error);
     }
   }
 
   Future<void> startListening() async {
     if (_state == SpeechRecognitionState.listening) return;
-    
-    if (_recognizer == null) {
-      await initialize();
-    }
+
+    // if (_recognizer == null) {
+    //   await initialize();
+    // }
 
     if (_state == SpeechRecognitionState.error) return;
 
@@ -85,47 +88,57 @@ class SpeechService {
     _recognizedText.clear();
 
     // Start Recording
-    await _recorder.start();
-    
-    _audioSubscription = _recorder.audioStream.listen((data) async {
-      if (_recognizer != null) {
-        final resultFound = await _recognizer!.acceptWaveformBytes(Uint8List.fromList(data));
-        if (resultFound) {
-          final result = await _recognizer!.getResult();
-          final text = jsonDecode(result)['text'];
-          if (text != null && text.isNotEmpty) {
-            _recognizedText.add(text);
-            _textStream.add(text);
-            _confidenceStream.add(0.95); // Vosk doesn't always provide confidence in simple result
-          }
-        } else {
-          final partialResult = await _recognizer!.getPartialResult();
-          final partialText = jsonDecode(partialResult)['partial'];
-          if (partialText != null && partialText.isNotEmpty) {
-            // We can emit partial text too if we want a "live" feel
-            _textStream.add(partialText);
-          }
-        }
-      }
-    });
+    if (_recorder != null && (_recorder as dynamic).start != null) {
+      await (_recorder as dynamic).start();
+    }
+
+    if (_recorder != null && (_recorder as dynamic).audioStream != null) {
+      _audioSubscription =
+          (_recorder as dynamic).audioStream.listen((data) async {
+        // if (_recognizer != null) {
+        //   final resultFound =
+        //       await _recognizer!.acceptWaveformBytes(Uint8List.fromList(data));
+        //   if (resultFound) {
+        //     final result = await _recognizer!.getResult();
+        //     final text = jsonDecode(result)['text'];
+        //     if (text != null && text.isNotEmpty) {
+        //       _recognizedText.add(text);
+        //       _textStream.add(text);
+        //       _confidenceStream.add(
+        //           0.95); // Vosk doesn't always provide confidence in simple result
+        //     }
+        //   } else {
+        //     final partialResult = await _recognizer!.getPartialResult();
+        //     final partialText = jsonDecode(partialResult)['partial'];
+        //     if (partialText != null && partialText.isNotEmpty) {
+        //       // We can emit partial text too if we want a "live" feel
+        //       _textStream.add(partialText);
+        //     }
+        //   }
+        // }
+      });
+    }
   }
 
   Future<void> stopListening() async {
     if (_state != SpeechRecognitionState.listening) return;
 
     _updateState(SpeechRecognitionState.processing);
-    
+
     await _audioSubscription?.cancel();
-    await _recorder.stop();
-    
-    if (_recognizer != null) {
-      final finalResult = await _recognizer!.getFinalResult();
-      final text = jsonDecode(finalResult)['text'];
-      if (text != null && text.isNotEmpty) {
-        _recognizedText.add(text);
-        _textStream.add(text);
-      }
+
+    if (_recorder != null && (_recorder as dynamic).stop != null) {
+      await (_recorder as dynamic).stop();
     }
+
+    // if (_recognizer != null) {
+    //   final finalResult = await _recognizer!.getFinalResult();
+    //   final text = jsonDecode(finalResult)['text'];
+    //   if (text != null && text.isNotEmpty) {
+    //     _recognizedText.add(text);
+    //     _textStream.add(text);
+    //   }
+    // }
 
     _updateState(SpeechRecognitionState.stopped);
   }
@@ -135,7 +148,8 @@ class SpeechService {
   }
 
   Future<void> resumeListening() async {
-    if (_state == SpeechRecognitionState.stopped || _state == SpeechRecognitionState.notStarted) {
+    if (_state == SpeechRecognitionState.stopped ||
+        _state == SpeechRecognitionState.notStarted) {
       await startListening();
     }
   }
@@ -181,9 +195,11 @@ class SpeechService {
 
   void dispose() {
     _audioSubscription?.cancel();
-    _recorder.stop();
-    _recognizer?.dispose();
-    _model?.dispose();
+    if (_recorder != null && (_recorder as dynamic).stop != null) {
+      (_recorder as dynamic).stop();
+    }
+    // _recognizer?.dispose();
+    // _model?.dispose();
     _textStream.close();
     _stateStream.close();
     _confidenceStream.close();

@@ -12,6 +12,7 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   String _selectedPaymentMethod = 'card';
   bool _saveCardInfo = true;
+  bool _isProcessing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +59,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       _buildOrderRow('Plan', 'Premium Monthly', '\$9.99'),
                       _buildOrderRow('Tax', 'Sales Tax', '\$0.80'),
                       const Divider(height: 24),
-                      _buildOrderRow('Total', 'Total Amount', '\$10.79', isTotal: true),
+                      _buildOrderRow('Total', 'Total Amount', '\$10.79',
+                          isTotal: true),
                       const SizedBox(height: 8),
                       Text(
                         'Billed monthly. Cancel anytime.',
@@ -114,6 +116,33 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 title: 'Apple Pay',
                 subtitle: 'Pay with Apple Pay',
                 isSelected: _selectedPaymentMethod == 'apple',
+              ),
+
+              const SizedBox(height: 16),
+              const Text(
+                'Mobile Wallets - Pakistan',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              _buildPaymentMethodOption(
+                value: 'jazzcash',
+                icon: Icons.phonelink_lock,
+                title: 'JazzCash',
+                subtitle: 'Pay with your JazzCash account',
+                isSelected: _selectedPaymentMethod == 'jazzcash',
+              ),
+
+              _buildPaymentMethodOption(
+                value: 'easypaisa',
+                icon: Icons.phone_android,
+                title: 'Easypaisa',
+                subtitle: 'Pay with your Easypaisa account',
+                isSelected: _selectedPaymentMethod == 'easypaisa',
               ),
 
               // Card Details Form (only shown when card is selected)
@@ -199,13 +228,234 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
               ],
 
+              // JazzCash Demo Form
+              if (_selectedPaymentMethod == 'jazzcash') ...[
+                const SizedBox(height: 24),
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // JazzCash Logo & Header
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2196F3).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2196F3),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'J',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'JazzCash',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2196F3),
+                                    ),
+                                  ),
+                                  Text(
+                                    'Mobile Payment Demo',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          decoration: const InputDecoration(
+                            labelText: 'Mobile Number',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.phone),
+                            hintText: '+92312345678',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          decoration: const InputDecoration(
+                            labelText: 'PIN',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.security),
+                            hintText: '****',
+                          ),
+                          obscureText: true,
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2196F3).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.info,
+                                  color: Color(0xFF2196F3), size: 20),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Demo Mode: OTP will be sent to Jazzmail',
+                                  style: TextStyle(
+                                      fontSize: 12, color: Color(0xFF2196F3)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
+              // Easypaisa Demo Form
+              if (_selectedPaymentMethod == 'easypaisa') ...[
+                const SizedBox(height: 24),
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Easypaisa Logo & Header
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF27AE60).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF27AE60),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'E',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Easypaisa',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF27AE60),
+                                    ),
+                                  ),
+                                  Text(
+                                    'Mobile Payment Demo',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          decoration: const InputDecoration(
+                            labelText: 'Mobile Number',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.phone),
+                            hintText: '+92312345678',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          decoration: const InputDecoration(
+                            labelText: 'Password',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.lock),
+                          ),
+                          obscureText: true,
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF27AE60).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.info,
+                                  color: Color(0xFF27AE60), size: 20),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Demo Mode: No real charges will be made',
+                                  style: TextStyle(
+                                      fontSize: 12, color: Color(0xFF27AE60)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 32),
 
               // Payment Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _processPayment,
+                  onPressed: _isProcessing ? null : _processPayment,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -215,13 +465,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     ),
                     elevation: 4,
                   ),
-                  child: const Text(
-                    'Pay \$10.79',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isProcessing
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Pay Now',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
 
@@ -335,7 +595,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Widget _buildOrderRow(String label, String description, String amount, {bool isTotal = false}) {
+  Widget _buildOrderRow(String label, String description, String amount,
+      {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -452,51 +713,281 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _processPayment() {
-    // Show loading
+    setState(() {
+      _isProcessing = true;
+    });
+
+    // Simulate payment processing with 2-3 second delay
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() {
+        _isProcessing = false;
+      });
+
+      // 90% success rate for demo
+      final isSuccess = DateTime.now().millisecond % 10 != 0;
+
+      if (isSuccess) {
+        _showSuccessDialog();
+      } else {
+        _showFailureDialog();
+      }
+    });
+  }
+
+  void _showSuccessDialog() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final methodPrefix = _getPaymentMethodPrefix();
+    final transactionId =
+        '$methodPrefix${timestamp.toString().substring(0, 10)}';
+
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    // Simulate payment processing
-    Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pop(context); // Remove loading dialog
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 30),
-              SizedBox(width: 10),
-              Text('Payment Successful'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Thank you for your purchase!'),
-              const SizedBox(height: 8),
-              Text(
-                'Your Premium subscription is now active.',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Column(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(30),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-              child: const Text('Back to Home'),
+              child:
+                  const Icon(Icons.check_circle, color: Colors.green, size: 40),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Payment Successful',
+              textAlign: TextAlign.center,
             ),
           ],
         ),
-      );
-    });
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Thank you for your purchase! Your Premium subscription is now active.',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Transaction Details',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTransactionDetail('Transaction ID:', transactionId),
+                  const SizedBox(height: 8),
+                  _buildTransactionDetail('Amount:', '\$10.79'),
+                  const SizedBox(height: 8),
+                  _buildTransactionDetail('Method:', _getPaymentMethodName()),
+                  const SizedBox(height: 8),
+                  _buildTransactionDetail('Status:', 'Success',
+                      isSuccess: true),
+                  const SizedBox(height: 8),
+                  _buildTransactionDetail(
+                    'Date:',
+                    '${DateTime.now().toLocal().toString().split('.')[0]}',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('View Details'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Back to Home'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFailureDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Column(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child:
+                  const Icon(Icons.error_outline, color: Colors.red, size: 40),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Payment Failed',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info, color: Colors.red, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Your payment could not be processed. Please try again.',
+                      style: TextStyle(fontSize: 12, color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Possible reasons:',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...[
+              '• Invalid card/wallet details',
+              '• Insufficient balance',
+              '• Network connectivity issue',
+              '• Transaction timeout',
+            ]
+                .map((reason) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        reason,
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      ),
+                    ))
+                .toList(),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Can retry payment
+              _processPayment();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getPaymentMethodPrefix() {
+    switch (_selectedPaymentMethod) {
+      case 'card':
+        return 'TXN';
+      case 'paypal':
+        return 'PP';
+      case 'google':
+        return 'GPY';
+      case 'apple':
+        return 'APP';
+      case 'jazzcash':
+        return 'JCK';
+      case 'easypaisa':
+        return 'EZP';
+      default:
+        return 'TXN';
+    }
+  }
+
+  String _getPaymentMethodName() {
+    switch (_selectedPaymentMethod) {
+      case 'card':
+        return 'Credit/Debit Card';
+      case 'paypal':
+        return 'PayPal';
+      case 'google':
+        return 'Google Pay';
+      case 'apple':
+        return 'Apple Pay';
+      case 'jazzcash':
+        return 'JazzCash';
+      case 'easypaisa':
+        return 'Easypaisa';
+      default:
+        return 'Payment Method';
+    }
+  }
+
+  Widget _buildTransactionDetail(String label, String value,
+      {bool isSuccess = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey[600],
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: isSuccess ? Colors.green : Colors.grey[900],
+          ),
+        ),
+      ],
+    );
   }
 }

@@ -1,6 +1,8 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import 'package:echo_see_companion/services/lip_tracking_service.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 class LipTrackingScreen extends StatefulWidget {
   const LipTrackingScreen({super.key});
@@ -25,17 +27,18 @@ class _LipTrackingScreenState extends State<LipTrackingScreen> {
     final frontCamera = (await availableCameras()).firstWhere(
       (c) => c.lensDirection == CameraLensDirection.front,
     );
-    
-    _cameraController = CameraController(frontCamera, ResolutionPreset.medium, enableAudio: false);
+
+    _cameraController = CameraController(frontCamera, ResolutionPreset.medium,
+        enableAudio: false);
     await _cameraController.initialize();
-    
+
     _cameraController.startImageStream((image) {
       if (!_isBusy) {
         _isBusy = true;
         _processImage(image);
       }
     });
-    
+
     if (mounted) setState(() {});
   }
 
@@ -78,7 +81,9 @@ class _LipTrackingScreenState extends State<LipTrackingScreen> {
               padding: const EdgeInsets.all(10),
               color: Colors.black54,
               child: Text(
-                _faces.isNotEmpty ? "Face Detected - Tracking Lips" : "Scanning for Face...",
+                _faces.isNotEmpty
+                    ? "Face Detected - Tracking Lips"
+                    : "Scanning for Face...",
                 style: const TextStyle(color: Colors.white, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
@@ -108,7 +113,10 @@ class LipPainter extends CustomPainter {
       final mouth = face.landmarks[FaceLandmarkType.bottomMouth];
       if (mouth != null) {
         // Simple visualization: circle around mouth
-        canvas.drawCircle(Offset(mouth.position.x.toDouble(), mouth.position.y.toDouble()), 20, paint);
+        canvas.drawCircle(
+            Offset(mouth.position.x.toDouble(), mouth.position.y.toDouble()),
+            20,
+            paint);
       }
     }
   }
